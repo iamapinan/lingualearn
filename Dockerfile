@@ -4,19 +4,10 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Copy package files
-COPY package.json pnpm-lock.yaml* package-lock.json* yarn.lock* ./
+COPY package.json package-lock.json* ./
 
-# Install dependencies based on the available lock file
-RUN \
-  if [ -f pnpm-lock.yaml ]; then \
-    corepack enable pnpm && pnpm install --frozen-lockfile; \
-  elif [ -f package-lock.json ]; then \
-    npm ci; \
-  elif [ -f yarn.lock ]; then \
-    yarn install --frozen-lockfile; \
-  else \
-    echo "No lock file found" && exit 1; \
-  fi
+# Install dependencies with npm
+RUN npm install --legacy-peer-deps
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
@@ -28,18 +19,10 @@ COPY . .
 
 # Set environment variables for build
 ENV NEXT_TELEMETRY_DISABLED 1
+ENV NODE_ENV production
 
 # Build the application
-RUN \
-  if [ -f pnpm-lock.yaml ]; then \
-    corepack enable pnpm && pnpm run build; \
-  elif [ -f package-lock.json ]; then \
-    npm run build; \
-  elif [ -f yarn.lock ]; then \
-    yarn build; \
-  else \
-    npm run build; \
-  fi
+RUN npm run build
 
 # Stage 3: Runner
 FROM node:20-alpine AS runner
