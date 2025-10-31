@@ -14,6 +14,7 @@ export interface User {
   name: string
   email: string
   passwordHash?: string
+  role?: "user" | "admin"
   totalXp: number
   lessonsCompleted: number
   joinedDate: string

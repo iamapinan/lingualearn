@@ -12,7 +12,6 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { useAuth } from "@/components/auth-provider"
-import { hasCompletedOrSkippedAssessment } from "@/lib/database"
 import { WelcomeAnimation } from "@/components/welcome-animation"
 import { useSidebarState } from "@/hooks/use-sidebar-state"
 import {
@@ -30,6 +29,9 @@ import {
   Flame,
   ChevronRight,
   ChevronLeft,
+  BookMarked,
+  LogOut,
+  Shield,
 } from "lucide-react"
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
@@ -38,31 +40,15 @@ export function Sidebar({ className, ...props }: SidebarProps) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const isDesktop = useMediaQuery("(min-width: 768px)")
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const [showSidebar, setShowSidebar] = useState(false)
   const [loading, setLoading] = useState(true)
   const { expanded, toggleSidebar } = useSidebarState()
 
-  // Check if assessment is completed
+  // Always show sidebar (assessment check disabled)
   useEffect(() => {
-    const checkAssessment = async () => {
-      if (user) {
-        try {
-          const completed = await hasCompletedOrSkippedAssessment(user.id)
-          setShowSidebar(completed)
-        } catch (error) {
-          console.error("Error checking assessment:", error)
-          // Default to showing sidebar if there's an error
-          setShowSidebar(true)
-        } finally {
-          setLoading(false)
-        }
-      } else {
-        setLoading(false)
-      }
-    }
-
-    checkAssessment()
+    setShowSidebar(true)
+    setLoading(false)
   }, [user])
 
   // Close mobile sidebar when route changes
@@ -77,20 +63,6 @@ export function Sidebar({ className, ...props }: SidebarProps) {
     }
   }, [pathname, isDesktop])
 
-  // Don't render sidebar if assessment not completed and not loading
-  if (!loading && !showSidebar) {
-    return null
-  }
-
-  // Show loading state
-  if (loading) {
-    return (
-      <div className="h-screen w-[70px] md:w-[240px] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
-      </div>
-    )
-  }
-
   const sidebarVariants = {
     hidden: { opacity: 0, x: -20 },
     visible: (i: number) => ({
@@ -101,6 +73,11 @@ export function Sidebar({ className, ...props }: SidebarProps) {
         duration: 0.5,
       },
     }),
+  }
+
+  const handleLogout = () => {
+    logout()
+    window.location.href = "/auth"
   }
 
   const navItems = [
@@ -120,14 +97,19 @@ export function Sidebar({ className, ...props }: SidebarProps) {
       icon: MessageSquare,
     },
     {
-      title: "Games",
-      href: "/games",
-      icon: Gamepad2,
-    },
-    {
       title: "Vocabulary",
       href: "/vocabulary",
       icon: BookText,
+    },
+    {
+      title: "Verbs",
+      href: "/verbs",
+      icon: BookMarked,
+    },
+    {
+      title: "Games",
+      href: "/games",
+      icon: Gamepad2,
     },
     {
       title: "Challenges",
@@ -156,6 +138,17 @@ export function Sidebar({ className, ...props }: SidebarProps) {
     },
   ]
 
+  // เพิ่มเมนู Admin สำหรับ admin เท่านั้น
+  const adminItems = user?.role === "admin" ? [
+    {
+      title: "Admin Panel",
+      href: "/admin",
+      icon: Shield,
+    },
+  ] : []
+
+  const allNavItems = [...navItems, ...adminItems]
+
   return (
     <>
       <Sheet open={open} onOpenChange={setOpen}>
@@ -170,7 +163,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="p-0">
-          <MobileSidebar navItems={navItems} pathname={pathname} />
+          <MobileSidebar navItems={allNavItems} pathname={pathname} onLogout={handleLogout} />
         </SheetContent>
       </Sheet>
 
@@ -202,7 +195,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
         </div>
         <ScrollArea className="flex-1 overflow-auto py-2">
           <nav className="grid gap-1 px-2 group">
-            {navItems.map((item, i) => (
+            {allNavItems.map((item, i) => (
               <motion.div key={item.href} custom={i} initial="hidden" animate="visible" variants={sidebarVariants}>
                 <Link
                   href={item.href}
@@ -218,6 +211,20 @@ export function Sidebar({ className, ...props }: SidebarProps) {
                 </Link>
               </motion.div>
             ))}
+            
+            <motion.div custom={allNavItems.length} initial="hidden" animate="visible" variants={sidebarVariants}>
+              <button
+                onClick={handleLogout}
+                className={cn(
+                  "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-red-50 hover:text-red-600 transition-colors text-red-500",
+                  !expanded && "justify-center",
+                )}
+                title={!expanded ? "Logout" : undefined}
+              >
+                <LogOut className="h-4 w-4" />
+                {expanded && "ออกจากระบบ"}
+              </button>
+            </motion.div>
           </nav>
         </ScrollArea>
         {expanded && <WelcomeAnimation />}
@@ -251,7 +258,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
   )
 }
 
-function MobileSidebar({ navItems, pathname }: { navItems: any[]; pathname: string }) {
+function MobileSidebar({ navItems, pathname, onLogout }: { navItems: any[]; pathname: string; onLogout: () => void }) {
   return (
     <div className="flex h-full flex-col bg-background">
       <div className="p-6">
@@ -275,6 +282,14 @@ function MobileSidebar({ navItems, pathname }: { navItems: any[]; pathname: stri
               {item.title}
             </Link>
           ))}
+          
+          <button
+            onClick={onLogout}
+            className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-red-50 hover:text-red-600 transition-colors text-red-500"
+          >
+            <LogOut className="h-4 w-4" />
+            ออกจากระบบ
+          </button>
         </nav>
       </ScrollArea>
     </div>

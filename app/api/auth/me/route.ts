@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
       id: user.id,
       name: user.name,
       email: user.email,
+      role: user.role,
       totalXp: user.totalXp,
       lessonsCompleted: user.lessonsCompleted,
       level: user.level,

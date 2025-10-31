@@ -7,12 +7,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import type { Verb } from "@/lib/database-types"
 
+type PracticeMode = "pastSimple" | "pastParticiple" | "mixed" | "allThree"
+type QuestionType = "pastSimple" | "pastParticiple" | "baseForm"
+
 interface VerbPracticeProps {
   verbs: Verb[]
   onComplete: () => void
+  mode: PracticeMode
 }
 
-export function VerbPractice({ verbs, onComplete }: VerbPracticeProps) {
+interface Question {
+  verb: Verb
+  questionType: QuestionType
+  prompt: string
+  answer: string
+}
+
+export function VerbPractice({ verbs, onComplete, mode }: VerbPracticeProps) {
+  const [questions] = useState<Question[]>(() => generateQuestions(verbs, mode))
   const [currentIndex, setCurrentIndex] = useState(0)
   const [userAnswer, setUserAnswer] = useState("")
   const [feedback, setFeedback] = useState<{
@@ -22,12 +34,84 @@ export function VerbPractice({ verbs, onComplete }: VerbPracticeProps) {
   }>({ show: false, correct: false, message: "" })
   const [score, setScore] = useState({ correct: 0, total: 0 })
 
-  const currentVerb = verbs[currentIndex]
+  const currentQuestion = questions[currentIndex]
+
+  function generateQuestions(verbs: Verb[], mode: PracticeMode): Question[] {
+    const questions: Question[] = []
+    
+    for (const verb of verbs) {
+      if (mode === "pastSimple") {
+        questions.push({
+          verb,
+          questionType: "pastSimple",
+          prompt: "เปลี่ยนเป็น Past Simple",
+          answer: verb.pastSimple,
+        })
+      } else if (mode === "pastParticiple") {
+        questions.push({
+          verb,
+          questionType: "pastParticiple",
+          prompt: "เปลี่ยนเป็น Past Participle",
+          answer: verb.pastParticiple,
+        })
+      } else if (mode === "mixed") {
+        const type = Math.random() > 0.5 ? "pastSimple" : "pastParticiple"
+        questions.push({
+          verb,
+          questionType: type,
+          prompt: type === "pastSimple" ? "เปลี่ยนเป็น Past Simple" : "เปลี่ยนเป็น Past Participle",
+          answer: type === "pastSimple" ? verb.pastSimple : verb.pastParticiple,
+        })
+      } else if (mode === "allThree") {
+        const types: QuestionType[] = ["pastSimple", "pastParticiple", "baseForm"]
+        for (const type of types) {
+          if (type === "baseForm") {
+            questions.push({
+              verb,
+              questionType: type,
+              prompt: "เปลี่ยนเป็น Base Form",
+              answer: verb.baseForm,
+            })
+          } else if (type === "pastSimple") {
+            questions.push({
+              verb,
+              questionType: type,
+              prompt: "เปลี่ยนเป็น Past Simple",
+              answer: verb.pastSimple,
+            })
+          } else {
+            questions.push({
+              verb,
+              questionType: type,
+              prompt: "เปลี่ยนเป็น Past Participle",
+              answer: verb.pastParticiple,
+            })
+          }
+        }
+      }
+    }
+    
+    return questions.sort(() => Math.random() - 0.5)
+  }
+
+  const getQuestionForm = () => {
+    if (!currentQuestion) return ""
+    const { verb, questionType } = currentQuestion
+    
+    if (questionType === "pastSimple") {
+      return verb.baseForm
+    } else if (questionType === "pastParticiple") {
+      return verb.baseForm
+    } else {
+      const forms = [verb.pastSimple, verb.pastParticiple]
+      return forms[Math.floor(Math.random() * forms.length)]
+    }
+  }
 
   const checkAnswer = async () => {
-    if (!currentVerb) return
+    if (!currentQuestion) return
 
-    const correct = userAnswer.toLowerCase().trim() === currentVerb.pastSimple.toLowerCase()
+    const correct = userAnswer.toLowerCase().trim() === currentQuestion.answer.toLowerCase()
 
     setScore((prev) => ({
       correct: prev.correct + (correct ? 1 : 0),
@@ -39,7 +123,7 @@ export function VerbPractice({ verbs, onComplete }: VerbPracticeProps) {
       correct,
       message: correct
         ? "ถูกต้อง!"
-        : `ไม่ถูกต้อง คำตอบที่ถูกต้องคือ: ${currentVerb.pastSimple}`,
+        : `ไม่ถูกต้อง คำตอบที่ถูกต้องคือ: ${currentQuestion.answer}`,
     })
 
     try {
@@ -51,7 +135,7 @@ export function VerbPractice({ verbs, onComplete }: VerbPracticeProps) {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          verbId: currentVerb.id,
+          verbId: currentQuestion.verb.id,
           correct,
         }),
       })
@@ -61,7 +145,7 @@ export function VerbPractice({ verbs, onComplete }: VerbPracticeProps) {
   }
 
   const nextQuestion = () => {
-    if (currentIndex < verbs.length - 1) {
+    if (currentIndex < questions.length - 1) {
       setCurrentIndex(currentIndex + 1)
       setUserAnswer("")
       setFeedback({ show: false, correct: false, message: "" })
@@ -70,7 +154,7 @@ export function VerbPractice({ verbs, onComplete }: VerbPracticeProps) {
     }
   }
 
-  if (!currentVerb) {
+  if (!currentQuestion) {
     return (
       <Card>
         <CardContent className="p-6 text-center">
@@ -80,21 +164,31 @@ export function VerbPractice({ verbs, onComplete }: VerbPracticeProps) {
     )
   }
 
+  const getModeLabel = () => {
+    switch (mode) {
+      case "pastSimple": return "Past Simple (V2)"
+      case "pastParticiple": return "Past Participle (V3)"
+      case "mixed": return "Mixed (V2 & V3)"
+      case "allThree": return "Three Forms (V1, V2, V3)"
+      default: return "Verbs"
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle>ฝึกฝน Verbs</CardTitle>
+          <CardTitle>ฝึกฝน {getModeLabel()}</CardTitle>
           <span className="text-sm text-gray-600">
-            {currentIndex + 1} / {verbs.length}
+            {currentIndex + 1} / {questions.length}
           </span>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="p-4 bg-gray-50 rounded-lg text-center">
-          <p className="text-sm text-gray-600 mb-2">เปลี่ยนเป็น Past Simple:</p>
-          <p className="text-3xl font-bold text-indigo-600">{currentVerb.baseForm}</p>
-          <p className="text-sm text-gray-500 mt-2">{currentVerb.translation}</p>
+        <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg text-center border-2 border-indigo-200">
+          <p className="text-sm text-gray-700 mb-2">{currentQuestion.prompt}:</p>
+          <p className="text-3xl font-bold text-indigo-600 mb-2">{getQuestionForm()}</p>
+          <p className="text-sm text-gray-600 italic">{currentQuestion.verb.translation}</p>
         </div>
 
         {!feedback.show ? (
@@ -122,26 +216,32 @@ export function VerbPractice({ verbs, onComplete }: VerbPracticeProps) {
               <AlertDescription>{feedback.message}</AlertDescription>
             </Alert>
 
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600 mb-2">รูปแบบทั้งหมด:</p>
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <p className="text-xs text-gray-500">Base</p>
-                  <p className="font-medium">{currentVerb.baseForm}</p>
+            <div className="p-4 bg-gray-50 rounded-lg border">
+              <p className="text-sm text-gray-600 mb-3 font-semibold">รูปแบบทั้งหมด:</p>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center p-2 bg-white rounded border">
+                  <p className="text-xs text-gray-500 mb-1">V1 (Base)</p>
+                  <p className="font-semibold text-blue-600">{currentQuestion.verb.baseForm}</p>
                 </div>
-                <div>
-                  <p className="text-xs text-gray-500">Past Simple</p>
-                  <p className="font-medium">{currentVerb.pastSimple}</p>
+                <div className="text-center p-2 bg-white rounded border">
+                  <p className="text-xs text-gray-500 mb-1">V2 (Past)</p>
+                  <p className="font-semibold text-green-600">{currentQuestion.verb.pastSimple}</p>
                 </div>
-                <div>
-                  <p className="text-xs text-gray-500">Past Participle</p>
-                  <p className="font-medium">{currentVerb.pastParticiple}</p>
+                <div className="text-center p-2 bg-white rounded border">
+                  <p className="text-xs text-gray-500 mb-1">V3 (Past Participle)</p>
+                  <p className="font-semibold text-purple-600">{currentQuestion.verb.pastParticiple}</p>
                 </div>
               </div>
+              {currentQuestion.verb.exampleSentence && (
+                <div className="mt-3 pt-3 border-t">
+                  <p className="text-xs text-gray-500">ตัวอย่าง:</p>
+                  <p className="text-sm text-gray-700 italic">{currentQuestion.verb.exampleSentence}</p>
+                </div>
+              )}
             </div>
 
             <Button onClick={nextQuestion} className="w-full bg-indigo-500 hover:bg-indigo-600">
-              {currentIndex < verbs.length - 1 ? "ข้อถัดไป" : "เสร็จสิ้น"}
+              {currentIndex < questions.length - 1 ? "ข้อถัดไป" : "เสร็จสิ้น"}
             </Button>
           </div>
         )}
@@ -149,8 +249,8 @@ export function VerbPractice({ verbs, onComplete }: VerbPracticeProps) {
         <div className="pt-4 border-t">
           <div className="flex justify-between text-sm">
             <span>คะแนน:</span>
-            <span className="font-semibold">
-              {score.correct} / {score.total}
+            <span className="font-semibold text-indigo-600">
+              {score.correct} / {score.total} ({score.total > 0 ? Math.round((score.correct / score.total) * 100) : 0}%)
             </span>
           </div>
         </div>
@@ -158,4 +258,5 @@ export function VerbPractice({ verbs, onComplete }: VerbPracticeProps) {
     </Card>
   )
 }
+
 

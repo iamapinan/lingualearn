@@ -6,6 +6,7 @@ export const users = mysqlTable("users", {
   name: varchar("name", { length: 100 }).notNull(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+  role: mysqlEnum("role", ["user", "admin"]).default("user"),
   totalXp: int("total_xp").notNull().default(0),
   lessonsCompleted: int("lessons_completed").notNull().default(0),
   level: int("level").notNull().default(1),

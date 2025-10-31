@@ -26,40 +26,31 @@ export async function GET(request: NextRequest) {
 
     const db = await getDb()
     
-    // If no user, get all verbs with userId=1 (default)
-    // If user exists, get their verbs
-    const targetUserId = userId || 1
-    let query = db.select().from(verbs).where(eq(verbs.userId, targetUserId))
-
+    // Get all verbs first (without userId filter) since they might be shared
+    let conditions = []
+    
     if (category) {
-      query = query.where(and(
-        eq(verbs.userId, targetUserId),
-        eq(verbs.category, category as "regular" | "irregular")
-      ))
+      conditions.push(eq(verbs.category, category as "regular" | "irregular"))
     }
 
     if (difficulty) {
-      query = query.where(and(
-        eq(verbs.userId, targetUserId),
-        eq(verbs.difficulty, parseInt(difficulty))
-      ))
+      conditions.push(eq(verbs.difficulty, parseInt(difficulty)))
     }
 
     if (languageId) {
-      query = query.where(and(
-        eq(verbs.userId, targetUserId),
-        eq(verbs.languageId, parseInt(languageId))
-      ))
+      conditions.push(eq(verbs.languageId, parseInt(languageId)))
     }
 
     if (needsReview === "true") {
-      query = query.where(and(
-        eq(verbs.userId, targetUserId),
-        lte(verbs.nextReview, new Date())
-      ))
+      conditions.push(lte(verbs.nextReview, new Date()))
     }
 
-    const userVerbs = await query
+    let userVerbs
+    if (conditions.length > 0) {
+      userVerbs = await db.select().from(verbs).where(and(...conditions))
+    } else {
+      userVerbs = await db.select().from(verbs)
+    }
 
     return NextResponse.json({
       success: true,

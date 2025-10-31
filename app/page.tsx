@@ -42,15 +42,19 @@ export default function HomePage() {
   useEffect(() => {
     const loadHomeData = async () => {
       if (!user || !token) {
+        console.log("No user or token, redirecting to /auth")
         router.push("/auth")
         return
       }
+
+      console.log("Loading home data for user:", user.name)
 
       try {
         const headers = {
           Authorization: `Bearer ${token}`,
         }
 
+        console.log("Fetching APIs...")
         const [languagesRes, lessonsRes, completionsRes, challengesRes, missionsRes] = await Promise.all([
           fetch("/api/languages"),
           fetch(`/api/lessons?languageId=${selectedLanguage}`),
@@ -59,31 +63,55 @@ export default function HomePage() {
           fetch("/api/missions", { headers }),
         ])
 
+        console.log("API responses:", {
+          languages: languagesRes.status,
+          lessons: lessonsRes.status,
+          completions: completionsRes.status,
+          challenges: challengesRes.status,
+          missions: missionsRes.status,
+        })
+
         if (languagesRes.ok) {
           const data = await languagesRes.json()
+          console.log("Languages loaded:", data.languages?.length)
           setLanguages(data.languages || [])
+        } else {
+          console.error("Languages API failed:", await languagesRes.text())
         }
 
         if (lessonsRes.ok) {
           const data = await lessonsRes.json()
+          console.log("Lessons loaded:", data.lessons?.length)
           setLessons(data.lessons || [])
+        } else {
+          console.error("Lessons API failed:", await lessonsRes.text())
         }
 
         if (completionsRes.ok) {
           const data = await completionsRes.json()
+          console.log("Completions loaded:", data.completions?.length)
           setCompletedLessons(data.completions || [])
+        } else {
+          console.error("Completions API failed:", await completionsRes.text())
         }
 
         if (challengesRes.ok) {
           const data = await challengesRes.json()
+          console.log("Challenges loaded:", data.challenges?.length)
           setChallenges(data.challenges || [])
+        } else {
+          console.error("Challenges API failed:", await challengesRes.text())
         }
 
         if (missionsRes.ok) {
           const data = await missionsRes.json()
+          console.log("Missions loaded:", data.missions?.length)
           setMissions(data.missions || [])
+        } else {
+          console.error("Missions API failed:", await missionsRes.text())
         }
 
+        console.log("Home data loading complete")
         setLoading(false)
       } catch (error) {
         console.error("Error loading home data:", error)
@@ -282,7 +310,7 @@ export default function HomePage() {
               <GameCard
                 title="Speed Challenge"
                 description="แปลให้เร็วที่สุด"
-                imageSrc="/placeholder.svg?key=2irfn"
+                imageSrc="/speed-challenge-cover.svg"
                 xpReward={30}
                 difficulty="hard"
                 href="/games/speed-challenge"

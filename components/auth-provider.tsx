@@ -6,6 +6,7 @@ interface User {
   id: number
   name: string
   email: string
+  role?: "user" | "admin"
   totalXp: number
   lessonsCompleted: number
   level: number

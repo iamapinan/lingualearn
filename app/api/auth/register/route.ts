@@ -65,6 +65,7 @@ export async function POST(request: NextRequest) {
       id: Number(userId),
       name,
       email,
+      role: "user" as const,
       totalXp: 0,
       lessonsCompleted: 0,
       level: 1,
