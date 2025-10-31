@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm"
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const db = getDb()
+    const db = await getDb()
     const id = Number.parseInt(params.id)
 
     const lesson = await db.select().from(schema.lessons).where(eq(schema.lessons.id, id)).limit(1)

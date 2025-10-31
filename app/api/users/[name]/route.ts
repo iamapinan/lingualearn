@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm"
 
 export async function GET(request: NextRequest, { params }: { params: { name: string } }) {
   try {
-    const db = getDb()
+    const db = await getDb()
     const name = params.name
 
     const user = await db.select().from(schema.users).where(eq(schema.users.name, name)).limit(1)
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest, { params }: { params: { name: st
 
 export async function PUT(request: NextRequest, { params }: { params: { name: string } }) {
   try {
-    const db = getDb()
+    const db = await getDb()
     const name = params.name
     const data = await request.json()
 

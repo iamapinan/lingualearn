@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm"
 
 export async function GET(request: NextRequest) {
   try {
-    const db = getDb()
+    const db = await getDb()
     const users = await db.select().from(schema.users)
     return NextResponse.json(users)
   } catch (error) {
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const db = getDb()
+    const db = await getDb()
     const data = await request.json()
 
     // Validate required fields

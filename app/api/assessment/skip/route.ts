@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm"
 
 export async function POST(request: NextRequest) {
   try {
-    const db = getDb()
+    const db = await getDb()
     const { userId } = await request.json()
 
     if (!userId) {

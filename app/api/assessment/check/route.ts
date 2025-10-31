@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm"
 
 export async function GET(request: NextRequest) {
   try {
-    const db = getDb()
+    const db = await getDb()
     const searchParams = request.nextUrl.searchParams
     const userId = searchParams.get("userId")
 

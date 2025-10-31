@@ -5,7 +5,7 @@ import { getMockQuestionsForLesson } from "@/lib/mock-questions"
 
 export async function GET(request: NextRequest) {
   try {
-    const db = getDb()
+    const db = await getDb()
     const searchParams = request.nextUrl.searchParams
     const lessonId = searchParams.get("lessonId")
 

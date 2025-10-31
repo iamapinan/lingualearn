@@ -4,7 +4,7 @@ import { eq, and } from "drizzle-orm"
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const db = getDb()
+    const db = await getDb()
     const challengeId = Number.parseInt(params.id)
     const { userId } = await request.json()
 

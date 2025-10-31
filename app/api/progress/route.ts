@@ -4,7 +4,7 @@ import { eq, and } from "drizzle-orm"
 
 export async function POST(request: NextRequest) {
   try {
-    const db = getDb()
+    const db = await getDb()
     const data = await request.json()
 
     // Validate required fields
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 }
 
 async function updateUserXP(userId: number, lessonId: number, xpEarned: number) {
-  const db = getDb()
+  const db = await getDb()
 
   // Get user
   const user = await db.select().from(schema.users).where(eq(schema.users.id, userId)).limit(1)
@@ -98,7 +98,7 @@ async function updateUserXP(userId: number, lessonId: number, xpEarned: number) 
 }
 
 async function addToVocabulary(userId: number, lessonId: number, questionId: number) {
-  const db = getDb()
+  const db = await getDb()
 
   // Get the question
   const question = await db.select().from(schema.questions).where(eq(schema.questions.id, questionId)).limit(1)
@@ -191,7 +191,7 @@ async function addToVocabulary(userId: number, lessonId: number, questionId: num
 }
 
 async function updateChallengeProgress(userId: number, challengeType: string, amount: number) {
-  const db = getDb()
+  const db = await getDb()
 
   // Get challenges of the specified type
   const challenges = await db.select().from(schema.challenges).where(eq(schema.challenges.type, challengeType))
@@ -227,7 +227,7 @@ async function updateChallengeProgress(userId: number, challengeType: string, am
 }
 
 async function updateMissionProgress(userId: number, missionType: string, amount: number) {
-  const db = getDb()
+  const db = await getDb()
 
   // Get missions that match the type
   const missions = await db.select().from(schema.missions)
