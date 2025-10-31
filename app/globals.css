@@ -1,0 +1,164 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 245 79% 52%; /* Indigo */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 270 76% 53%; /* Purple */
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 245 79% 95%;
+    --accent-foreground: 245 79% 40%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 245 79% 52%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 245 79% 52%; /* Indigo */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 270 76% 53%; /* Purple */
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 245 79% 15%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 245 79% 52%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+}
+
+/* Add smooth transitions to common elements */
+.btn,
+.button,
+button,
+a,
+input,
+select,
+textarea,
+.card,
+.progress,
+.badge,
+.alert,
+.notification,
+.tab,
+.menu-item,
+[class*="bg-"],
+[class*="text-"],
+[class*="border-"],
+[class*="ring-"],
+[class*="shadow-"] {
+  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+  transition-duration: 300ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Specific transitions for shadcn components */
+.card {
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.button,
+.btn,
+button {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, transform 0.15s ease;
+}
+
+.button:active,
+.btn:active,
+button:active {
+  transition: transform 0.05s ease;
+}
+
+/* Progress bar transitions */
+.progress {
+  transition: background-color 0.3s ease;
+}
+
+.progress > div {
+  transition: width 0.5s ease-out, background-color 0.3s ease;
+}
+
+/* 3D card flip effect */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+/* Theme transition effect */
+.theme-transition {
+  animation: theme-fade 0.5s ease-out;
+}
+
+@keyframes theme-fade {
+  0% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Hover effect transitions */
+.hover-transition {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-transition:hover {
+  transform: translateY(-2px);
+}

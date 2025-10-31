@@ -1,0 +1,282 @@
+"use client"
+
+import type React from "react"
+
+import { useState, useEffect } from "react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { motion } from "framer-motion"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { useMediaQuery } from "@/hooks/use-media-query"
+import { useAuth } from "@/components/auth-provider"
+import { hasCompletedOrSkippedAssessment } from "@/lib/database"
+import { WelcomeAnimation } from "@/components/welcome-animation"
+import { useSidebarState } from "@/hooks/use-sidebar-state"
+import {
+  BookOpen,
+  GraduationCap,
+  Home,
+  Menu,
+  MessageSquare,
+  Award,
+  History,
+  Gamepad2,
+  Sparkles,
+  BookText,
+  Trophy,
+  Flame,
+  ChevronRight,
+  ChevronLeft,
+} from "lucide-react"
+
+interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
+
+export function Sidebar({ className, ...props }: SidebarProps) {
+  const pathname = usePathname()
+  const [open, setOpen] = useState(false)
+  const isDesktop = useMediaQuery("(min-width: 768px)")
+  const { user } = useAuth()
+  const [showSidebar, setShowSidebar] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const { expanded, toggleSidebar } = useSidebarState()
+
+  // Check if assessment is completed
+  useEffect(() => {
+    const checkAssessment = async () => {
+      if (user) {
+        try {
+          const completed = await hasCompletedOrSkippedAssessment(user.id)
+          setShowSidebar(completed)
+        } catch (error) {
+          console.error("Error checking assessment:", error)
+          // Default to showing sidebar if there's an error
+          setShowSidebar(true)
+        } finally {
+          setLoading(false)
+        }
+      } else {
+        setLoading(false)
+      }
+    }
+
+    checkAssessment()
+  }, [user])
+
+  // Close mobile sidebar when route changes
+  useEffect(() => {
+    setOpen(false)
+  }, [pathname])
+
+  // Close sidebar on desktop when route changes
+  useEffect(() => {
+    if (isDesktop) {
+      setOpen(false)
+    }
+  }, [pathname, isDesktop])
+
+  // Don't render sidebar if assessment not completed and not loading
+  if (!loading && !showSidebar) {
+    return null
+  }
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="h-screen w-[70px] md:w-[240px] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+      </div>
+    )
+  }
+
+  const sidebarVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: (i: number) => ({
+      opacity: 1,
+      x: 0,
+      transition: {
+        delay: i * 0.1,
+        duration: 0.5,
+      },
+    }),
+  }
+
+  const navItems = [
+    {
+      title: "Home",
+      href: "/",
+      icon: Home,
+    },
+    {
+      title: "Lessons",
+      href: "/lesson/1",
+      icon: BookOpen,
+    },
+    {
+      title: "Practice",
+      href: "/practice",
+      icon: MessageSquare,
+    },
+    {
+      title: "Games",
+      href: "/games",
+      icon: Gamepad2,
+    },
+    {
+      title: "Vocabulary",
+      href: "/vocabulary",
+      icon: BookText,
+    },
+    {
+      title: "Challenges",
+      href: "/challenges",
+      icon: Flame,
+    },
+    {
+      title: "Achievements",
+      href: "/achievements",
+      icon: Award,
+    },
+    {
+      title: "Badges",
+      href: "/badges",
+      icon: Trophy,
+    },
+    {
+      title: "History",
+      href: "/history",
+      icon: History,
+    },
+    {
+      title: "Profile",
+      href: "/profile",
+      icon: GraduationCap,
+    },
+  ]
+
+  return (
+    <>
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn("fixed top-4 z-40 md:hidden", expanded ? "left-[240px]" : "left-[70px]")}
+            aria-label="Open Menu"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="p-0">
+          <MobileSidebar navItems={navItems} pathname={pathname} />
+        </SheetContent>
+      </Sheet>
+
+      <motion.aside
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5 }}
+        className={cn(
+          "fixed inset-y-0 left-0 z-30 hidden flex-col border-r bg-background md:flex",
+          expanded ? "w-[240px]" : "w-[70px]",
+          className,
+        )}
+        {...props}
+      >
+        <div className={cn("p-6 flex items-center", expanded ? "justify-between" : "justify-center")}>
+          <Link href="/" className={cn("flex items-center gap-2 font-semibold", !expanded && "justify-center")}>
+            <Sparkles className="h-5 w-5 text-indigo-500" />
+            {expanded && <span>LinguaLearn</span>}
+          </Link>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleSidebar}
+            className="hidden md:flex"
+            aria-label={expanded ? "Collapse Sidebar" : "Expand Sidebar"}
+          >
+            {expanded ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </Button>
+        </div>
+        <ScrollArea className="flex-1 overflow-auto py-2">
+          <nav className="grid gap-1 px-2 group">
+            {navItems.map((item, i) => (
+              <motion.div key={item.href} custom={i} initial="hidden" animate="visible" variants={sidebarVariants}>
+                <Link
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors",
+                    pathname === item.href ? "bg-accent text-accent-foreground" : "transparent",
+                    !expanded && "justify-center",
+                  )}
+                  title={!expanded ? item.title : undefined}
+                >
+                  <item.icon className="h-4 w-4" />
+                  {expanded && item.title}
+                </Link>
+              </motion.div>
+            ))}
+          </nav>
+        </ScrollArea>
+        {expanded && <WelcomeAnimation />}
+
+        {/* Mobile toggle button at the bottom */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={toggleSidebar}
+          className="md:hidden mx-auto mb-4 mt-2"
+          aria-label={expanded ? "Collapse Sidebar" : "Expand Sidebar"}
+        >
+          {expanded ? <ChevronLeft className="h-4 w-4 mr-2" /> : <ChevronRight className="h-4 w-4" />}
+          {expanded && <span>Collapse</span>}
+        </Button>
+      </motion.aside>
+
+      {/* Floating toggle button for mobile when sidebar is collapsed */}
+      {!expanded && (
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={toggleSidebar}
+          className="fixed bottom-4 left-4 z-40 md:hidden rounded-full shadow-md"
+          aria-label="Expand Sidebar"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      )}
+    </>
+  )
+}
+
+function MobileSidebar({ navItems, pathname }: { navItems: any[]; pathname: string }) {
+  return (
+    <div className="flex h-full flex-col bg-background">
+      <div className="p-6">
+        <Link href="/" className="flex items-center gap-2 font-semibold">
+          <Sparkles className="h-5 w-5 text-indigo-500" />
+          <span>LinguaLearn</span>
+        </Link>
+      </div>
+      <ScrollArea className="flex-1 overflow-auto py-2">
+        <nav className="grid gap-1 px-2">
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors",
+                pathname === item.href ? "bg-accent text-accent-foreground" : "transparent",
+              )}
+            >
+              <item.icon className="h-4 w-4" />
+              {item.title}
+            </Link>
+          ))}
+        </nav>
+      </ScrollArea>
+    </div>
+  )
+}
