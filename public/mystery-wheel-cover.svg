@@ -1,0 +1,52 @@
+<svg width="400" height="300" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="400" height="300" fill="#f0f0f0"/>
+  
+  <!-- Wheel Circle -->
+  <circle cx="200" cy="150" r="120" fill="#fff" stroke="#333" stroke-width="3"/>
+  
+  <!-- Wheel Sections -->
+  <g transform="translate(200, 150)">
+    <!-- Section 1 -->
+    <path d="M 0 0 L 0 -120 A 120 120 0 0 1 85 -85 Z" fill="#FF6B6B" stroke="#333" stroke-width="2"/>
+    <!-- Section 2 -->
+    <path d="M 0 0 L 85 -85 A 120 120 0 0 1 120 0 Z" fill="#4ECDC4" stroke="#333" stroke-width="2"/>
+    <!-- Section 3 -->
+    <path d="M 0 0 L 120 0 A 120 120 0 0 1 85 85 Z" fill="#45B7D1" stroke="#333" stroke-width="2"/>
+    <!-- Section 4 -->
+    <path d="M 0 0 L 85 85 A 120 120 0 0 1 0 120 Z" fill="#FFA07A" stroke="#333" stroke-width="2"/>
+    <!-- Section 5 -->
+    <path d="M 0 0 L 0 120 A 120 120 0 0 1 -85 85 Z" fill="#98D8C8" stroke="#333" stroke-width="2"/>
+    <!-- Section 6 -->
+    <path d="M 0 0 L -85 85 A 120 120 0 0 1 -120 0 Z" fill="#F7DC6F" stroke="#333" stroke-width="2"/>
+    <!-- Section 7 -->
+    <path d="M 0 0 L -120 0 A 120 120 0 0 1 -85 -85 Z" fill="#BB8FCE" stroke="#333" stroke-width="2"/>
+    <!-- Section 8 -->
+    <path d="M 0 0 L -85 -85 A 120 120 0 0 1 0 -120 Z" fill="#85C1E2" stroke="#333" stroke-width="2"/>
+    
+    <!-- Center Circle -->
+    <circle cx="0" cy="0" r="30" fill="#333"/>
+    <circle cx="0" cy="0" r="20" fill="#fff"/>
+    
+    <!-- Question Mark in Center -->
+    <text x="0" y="0" text-anchor="middle" dominant-baseline="middle" font-size="24" font-weight="bold" fill="#333">?</text>
+  </g>
+  
+  <!-- Pointer at Top -->
+  <g transform="translate(200, 30)">
+    <polygon points="0,0 15,25 0,20 -15,25" fill="#FFD700" stroke="#333" stroke-width="2"/>
+  </g>
+  
+  <!-- Decorative Stars -->
+  <g fill="#FFD700" opacity="0.7">
+    <path d="M 50 50 L 52 58 L 60 58 L 53 62 L 55 70 L 50 65 L 45 70 L 47 62 L 40 58 L 48 58 Z" />
+    <path d="M 350 50 L 352 58 L 360 58 L 353 62 L 355 70 L 350 65 L 345 70 L 347 62 L 340 58 L 348 58 Z" />
+    <path d="M 50 250 L 52 258 L 60 258 L 53 262 L 55 270 L 50 265 L 45 270 L 47 262 L 40 258 L 48 258 Z" />
+    <path d="M 350 250 L 352 258 L 360 258 L 353 262 L 355 270 L 350 265 L 345 270 L 347 262 L 340 258 L 348 258 Z" />
+  </g>
+  
+  <!-- Title Text -->
+  <text x="200" y="280" text-anchor="middle" font-size="20" font-weight="bold" fill="#333">วงล้อปริศนา</text>
+  <text x="200" y="295" text-anchor="middle" font-size="14" fill="#666">Mystery Wheel</text>
+</svg>
+

@@ -7,8 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
-import { Trophy, Star, BookOpen, Calendar, Clock, Award, Flame, Target, TrendingUp } from "lucide-react"
+import { Trophy, Star, BookOpen, Calendar, Clock, Award, Flame, Target, TrendingUp, KeyRound } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
+import { ChangePasswordDialog } from "@/components/auth/change-password-dialog"
 import {
   getUserStats,
   getUserCompletedLessons,
@@ -19,12 +20,13 @@ import { calculateLevelFromXP, calculateXPForNextLevel, calculateLevelProgress }
 
 export default function ProfilePage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const [stats, setStats] = useState<any>(null)
   const [completedLessons, setCompletedLessons] = useState<any[]>([])
   const [languageProgress, setLanguageProgress] = useState<{ [key: string]: number }>({})
   const [badges, setBadges] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [changePasswordDialogOpen, setChangePasswordDialogOpen] = useState(false)
 
   useEffect(() => {
     const loadProfileData = async () => {
@@ -102,28 +104,57 @@ export default function ProfilePage() {
         )
       : 0
 
+  const handleChangePassword = async (oldPassword: string, newPassword: string) => {
+    const response = await fetch("/api/auth/change-password", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ oldPassword, newPassword }),
+    })
+
+    if (!response.ok) {
+      const data = await response.json()
+      throw new Error(data.error || "ไม่สามารถเปลี่ยนรหัสผ่านได้")
+    }
+
+    alert("เปลี่ยนรหัสผ่านสำเร็จ")
+  }
+
   return (
     <div className="container max-w-6xl mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row gap-6 mb-8">
         <div className="flex-1">
           <Card className="mb-6">
             <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="relative w-20 h-20 rounded-full overflow-hidden bg-indigo-100">
-                  <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-indigo-500">
-                    {user.name.charAt(0).toUpperCase()}
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="relative w-20 h-20 rounded-full overflow-hidden bg-indigo-100">
+                    <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-indigo-500">
+                      {user.name.charAt(0).toUpperCase()}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold">{user.name}</h1>
-                  <p className="text-gray-500">Joined {new Date(user.joinedDate).toLocaleDateString()}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full text-xs font-semibold flex items-center">
-                      <Star className="h-3 w-3 mr-1" />
-                      Level {userLevel}
+                  <div className="flex-1">
+                    <h1 className="text-2xl font-bold">{user.name}</h1>
+                    <p className="text-gray-500">Joined {new Date(user.joinedDate).toLocaleDateString()}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full text-xs font-semibold flex items-center">
+                        <Star className="h-3 w-3 mr-1" />
+                        Level {userLevel}
+                      </div>
                     </div>
                   </div>
                 </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-fit"
+                  onClick={() => setChangePasswordDialogOpen(true)}
+                >
+                  <KeyRound className="h-4 w-4 mr-2" />
+                  เปลี่ยนรหัสผ่าน
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -379,6 +410,12 @@ export default function ProfilePage() {
           </Tabs>
         </div>
       </div>
+
+      <ChangePasswordDialog
+        open={changePasswordDialogOpen}
+        onClose={() => setChangePasswordDialogOpen(false)}
+        onChangePassword={handleChangePassword}
+      />
     </div>
   )
 }

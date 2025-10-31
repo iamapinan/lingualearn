@@ -6,11 +6,23 @@ import { GameCard } from "@/components/game-card"
 import { useRouter } from "next/navigation"
 import { BackButton } from "@/components/back-button"
 
+type GameDifficulty = "easy" | "medium" | "hard"
+
+interface Game {
+  id: string
+  title: string
+  description: string
+  image: string
+  difficulty: GameDifficulty
+  xpReward: number
+  category: string
+}
+
 export default function GamesPage() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState("all")
 
-  const games = [
+  const games: Game[] = [
     {
       id: "memory-match",
       title: "Memory Match",
@@ -54,6 +66,15 @@ export default function GamesPage() {
       image: "/word-search-puzzle.png",
       difficulty: "medium",
       xpReward: 20,
+      category: "vocabulary",
+    },
+    {
+      id: "mystery-wheel",
+      title: "Mystery Wheel Game",
+      description: "Spin the wheel and guess the word from the hint",
+      image: "/mystery-wheel-cover.svg",
+      difficulty: "medium",
+      xpReward: 25,
       category: "vocabulary",
     },
   ]
