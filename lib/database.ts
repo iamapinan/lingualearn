@@ -189,6 +189,7 @@ interface Question {
 
 interface UserProgress {
   id?: number
+  userId?: number
   lessonId: number
   questionId: number
   completed: number
@@ -1209,37 +1210,61 @@ export async function getLessonById(id: number): Promise<Lesson | null> {
   }
 }
 
-export async function saveUserProgress(progress: UserProgress): Promise<boolean> {
+export async function saveUserProgress(progress: UserProgress, userId?: number): Promise<boolean> {
   try {
+    // Get userId from parameter or localStorage
+    let actualUserId = userId
+    if (!actualUserId) {
+      const currentUserStr = localStorage.getItem("lingualearn_user")
+      if (currentUserStr) {
+        const currentUser = JSON.parse(currentUserStr)
+        actualUserId = currentUser.id
+      }
+    }
+    
+    if (!actualUserId) {
+      console.error("No userId provided and could not get from localStorage")
+      return false
+    }
+
     const db = await initializeDatabase()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(["user_progress", "vocabulary"], "readwrite")
       const store = transaction.objectStore("user_progress")
 
-      // Add timestamp if not provided
+      // Add timestamp and userId if not provided
       if (!progress.timestamp) {
         progress.timestamp = new Date().toISOString()
+      }
+      if (!progress.userId) {
+        progress.userId = actualUserId
       }
 
       const request = store.add(progress)
 
-      request.onsuccess = () => {
-        // Update user XP and lessons completed
-        updateUserXP(progress.lessonId, progress.correct === 1 ? 10 : 0)
+      request.onsuccess = async () => {
+        try {
+          // Update user XP and lessons completed
+          await updateUserXP(actualUserId!, progress.lessonId, progress.correct === 1 ? 10 : 0)
 
-        // If answer was correct, add to vocabulary
-        addToVocabulary(progress.lessonId, progress.questionId)
+          // If answer was correct, add to vocabulary
+          if (progress.correct === 1) {
+            await addToVocabulary(actualUserId!, progress.lessonId, progress.questionId)
+            
+            // Update challenge and mission progress
+            await updateChallengeProgress(actualUserId!, "xp", 10)
+            await updateMissionProgress(actualUserId!, "correct_answers", 1)
+          }
 
-        // Update challenge progress
-        updateChallengeProgress("lesson", 1)
-        if (progress.correct === 1) {
-          updateChallengeProgress("xp", 10)
+          // Update challenge progress for lesson
+          await updateChallengeProgress(actualUserId!, "lesson", 1)
 
-          // Update mission progress
-          // updateMissionProgress(1)
+          resolve(true)
+        } catch (error) {
+          console.error("Error in saveUserProgress callbacks:", error)
+          // Still resolve as the progress was saved
+          resolve(true)
         }
-
-        resolve(true)
       }
 
       request.onerror = () => {
@@ -1252,14 +1277,8 @@ export async function saveUserProgress(progress: UserProgress): Promise<boolean>
   }
 }
 
-async function addToVocabulary(lessonId: number, questionId: number): Promise<void> {
+async function addToVocabulary(userId: number, lessonId: number, questionId: number): Promise<void> {
   try {
-    // Get current user from localStorage
-    const currentUserStr = localStorage.getItem("lingualearn_user")
-    if (!currentUserStr) return
-
-    const currentUser = JSON.parse(currentUserStr)
-    const userId = currentUser.id
 
     const db = await initializeDatabase()
 
@@ -1393,15 +1412,30 @@ export async function updateVocabularyReview(
     correctCount: number
     incorrectCount: number
   },
+  userId?: number,
 ): Promise<boolean> {
   try {
+    let actualUserId = userId
+    if (!actualUserId) {
+      const currentUserStr = localStorage.getItem("lingualearn_user")
+      if (currentUserStr) {
+        const currentUser = JSON.parse(currentUserStr)
+        actualUserId = currentUser.id
+      }
+    }
+    
+    if (!actualUserId) {
+      console.error("No userId provided for updateVocabularyReview")
+      return false
+    }
+
     const db = await initializeDatabase()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction("vocabulary", "readwrite")
       const store = transaction.objectStore("vocabulary")
       const request = store.get(id)
 
-      request.onsuccess = () => {
+      request.onsuccess = async () => {
         if (!request.result) {
           reject("Vocabulary item not found")
           return
@@ -1410,14 +1444,19 @@ export async function updateVocabularyReview(
         const updatedItem = { ...request.result, ...updates }
         const updateRequest = store.put(updatedItem)
 
-        updateRequest.onsuccess = () => {
-          // Update challenge progress for vocabulary review
-          updateChallengeProgress("vocabulary", 1)
+        updateRequest.onsuccess = async () => {
+          try {
+            // Update challenge progress for vocabulary review
+            await updateChallengeProgress(actualUserId!, "vocabulary", 1)
+            
+            // Update mission progress for vocabulary review
+            await updateMissionProgress(actualUserId!, "vocabulary", 1)
 
-          // Update mission progress for vocabulary review
-          // updateMissionProgress(1)
-
-          resolve(true)
+            resolve(true)
+          } catch (error) {
+            console.error("Error updating challenge/mission progress:", error)
+            resolve(true) // Still resolve as vocabulary was updated
+          }
         }
 
         updateRequest.onerror = () => {
@@ -1435,53 +1474,131 @@ export async function updateVocabularyReview(
   }
 }
 
-async function updateUserXP(lessonId: number, xpEarned: number): Promise<void> {
+async function updateUserXP(userId: number, lessonId: number, xpEarned: number): Promise<void> {
   try {
-    // Get current user from localStorage
-    const currentUserStr = localStorage.getItem("lingualearn_user")
-    if (!currentUserStr) return
-
-    const currentUser = JSON.parse(currentUserStr)
-    const userId = currentUser.id
+    if (xpEarned <= 0) return
 
     const db = await initializeDatabase()
-    const transaction = db.transaction("users", "readwrite")
-    const store = transaction.objectStore("users")
-    const request = store.get(userId)
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction("users", "readwrite")
+      const store = transaction.objectStore("users")
+      const request = store.get(userId)
 
-    request.onsuccess = () => {
-      if (request.result) {
-        const user = request.result
+      request.onsuccess = async () => {
+        let user = request.result
 
-        // Check if this is a new lesson completion
-        const isNewLesson = !user.completedLessons || !user.completedLessons.includes(lessonId)
-
-        user.totalXp = (user.totalXp || 0) + xpEarned
-        user.totalPoints = (user.totalPoints || 0) + xpEarned
-
-        // Check if user should level up
-        const newLevel = calculateLevel(user.totalPoints)
-        if (newLevel > user.level) {
-          user.level = newLevel
+        // If user doesn't exist in IndexedDB, try to create from localStorage
+        if (!user) {
+          try {
+            const currentUserStr = localStorage.getItem("lingualearn_user")
+            if (currentUserStr) {
+              const currentUser = JSON.parse(currentUserStr)
+              if (currentUser.id === userId) {
+                // Create user in IndexedDB from localStorage data
+                user = {
+                  id: userId,
+                  name: currentUser.name || `User ${userId}`,
+                  totalXp: currentUser.totalXp || 0,
+                  lessonsCompleted: currentUser.lessonsCompleted || 0,
+                  joinedDate: currentUser.joinedDate || new Date().toISOString().split("T")[0],
+                  level: currentUser.level || 1,
+                  totalPoints: currentUser.totalPoints || 0,
+                  completedLessons: currentUser.completedLessons || [],
+                  speakingPractice: currentUser.speakingPractice || {
+                    totalPracticed: 0,
+                    correctCount: 0,
+                    averageScore: 0,
+                    history: [],
+                  },
+                  games: currentUser.games || {},
+                  practiceStats: currentUser.practiceStats || {},
+                }
+                
+                // Add user to IndexedDB
+                const addRequest = store.add(user)
+                addRequest.onsuccess = () => {
+                  // Continue with XP update
+                  updateUserXPData(user, userId, lessonId, xpEarned, store, resolve, reject)
+                }
+                addRequest.onerror = () => {
+                  reject(new Error("Error creating user in database"))
+                }
+                return
+              }
+            }
+          } catch (error) {
+            console.error("Error loading user from localStorage:", error)
+          }
+          
+          // If we still don't have a user, reject
+          reject(new Error("User not found in database or localStorage"))
+          return
         }
 
-        if (isNewLesson) {
-          user.lessonsCompleted = (user.lessonsCompleted || 0) + 1
-          user.completedLessons = [...(user.completedLessons || []), lessonId]
-
-          // Update mission progress for completing a lesson
-          // updateMissionProgress(1)
-        }
-
-        // Update user in database
-        store.put(user)
-
-        // Update user in localStorage
-        localStorage.setItem("lingualearn_user", JSON.stringify(user))
+        // User exists, update normally
+        updateUserXPData(user, userId, lessonId, xpEarned, store, resolve, reject)
       }
-    }
+
+      request.onerror = () => {
+        reject(new Error("Error getting user"))
+      }
+    })
   } catch (error) {
     console.error("Error updating user XP:", error)
+    throw error
+  }
+}
+
+// Helper function to update user XP data
+async function updateUserXPData(
+  user: any,
+  userId: number,
+  lessonId: number,
+  xpEarned: number,
+  store: IDBObjectStore,
+  resolve: () => void,
+  reject: (error: Error) => void,
+): Promise<void> {
+  try {
+    // Check if this is a new lesson completion
+    const isNewLesson = !user.completedLessons || !user.completedLessons.includes(lessonId)
+
+    user.totalXp = (user.totalXp || 0) + xpEarned
+    user.totalPoints = (user.totalPoints || 0) + xpEarned
+
+    // Check if user should level up
+    const newLevel = calculateLevel(user.totalPoints)
+    if (newLevel > user.level) {
+      user.level = newLevel
+    }
+
+    if (isNewLesson) {
+      user.lessonsCompleted = (user.lessonsCompleted || 0) + 1
+      user.completedLessons = [...(user.completedLessons || []), lessonId]
+
+      // Update mission progress for completing a lesson
+      await updateMissionProgress(userId, "lesson", 1)
+    }
+
+    // Update user in database
+    const putRequest = store.put(user)
+    
+    putRequest.onsuccess = () => {
+      // Update user in localStorage
+      localStorage.setItem("lingualearn_user", JSON.stringify(user))
+      
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new Event("userUpdated"))
+      
+      resolve()
+    }
+
+    putRequest.onerror = () => {
+      reject(new Error("Error updating user in database"))
+    }
+  } catch (error) {
+    console.error("Error in updateUserXPData:", error)
+    reject(error as Error)
   }
 }
 
@@ -2089,14 +2206,8 @@ export async function getDailyChallenges(userId: number): Promise<Challenge[]> {
   }
 }
 
-export async function updateChallengeProgress(challengeType: string, amount: number): Promise<void> {
+export async function updateChallengeProgress(userId: number, challengeType: string, amount: number): Promise<void> {
   try {
-    // Get current user from localStorage
-    const currentUserStr = localStorage.getItem("lingualearn_user")
-    if (!currentUserStr) return
-
-    const currentUser = JSON.parse(currentUserStr)
-    const userId = currentUser.id
 
     const db = await initializeDatabase()
     const transaction = db.transaction(["challenges", "user_challenges"], "readwrite")
@@ -2230,6 +2341,7 @@ export async function completeLessonAndSaveProgress(
   score: number,
   totalQuestions: number,
   correctAnswers: number,
+  xpEarned?: number,
 ): Promise<boolean> {
   try {
     const db = await initializeDatabase()
@@ -2243,8 +2355,9 @@ export async function completeLessonAndSaveProgress(
       const index = lessonCompletionsStore.index("userId_lessonId")
       const request = index.get([userId, lessonId])
 
-      request.onsuccess = () => {
+      request.onsuccess = async () => {
         const existingCompletion = request.result
+        const isNewCompletion = !existingCompletion
 
         if (existingCompletion) {
           // Update existing completion if the new score is better
@@ -2269,39 +2382,79 @@ export async function completeLessonAndSaveProgress(
 
           const addRequest = lessonCompletionsStore.add(newCompletion)
 
-          addRequest.onsuccess = () => {
-            // Update user stats
-            const userRequest = usersStore.get(userId)
-            userRequest.onsuccess = () => {
-              const user = userRequest.result
-              if (user) {
-                // Increment lessons completed count
-                user.lessonsCompleted = (user.lessonsCompleted || 0) + 1
-                usersStore.put(user)
+          addRequest.onsuccess = async () => {
+            try {
+              // Update user stats
+              const userRequest = usersStore.get(userId)
+              userRequest.onsuccess = async () => {
+                const user = userRequest.result
+                if (user) {
+                  // Check if this is a new lesson completion
+                  const isNewLesson = !user.completedLessons || !user.completedLessons.includes(lessonId)
 
-                // Update user in localStorage
-                localStorage.setItem("lingualearn_user", JSON.stringify(user))
-              }
+                  // Award XP if provided
+                  if (xpEarned && xpEarned > 0) {
+                    user.totalXp = (user.totalXp || 0) + xpEarned
+                    user.totalPoints = (user.totalPoints || 0) + xpEarned
 
-              // Update user_stats
-              const statsRequest = userStatsStore.get(1)
-              statsRequest.onsuccess = () => {
-                const stats = statsRequest.result
-                if (stats) {
-                  stats.lessonsCompleted = (stats.lessonsCompleted || 0) + 1
-                  userStatsStore.put(stats)
+                    // Check if user should level up
+                    const newLevel = calculateLevel(user.totalPoints)
+                    if (newLevel > user.level) {
+                      user.level = newLevel
+                    }
+                  }
+
+                  // Increment lessons completed count if new lesson
+                  if (isNewLesson) {
+                    user.lessonsCompleted = (user.lessonsCompleted || 0) + 1
+                    user.completedLessons = [...(user.completedLessons || []), lessonId]
+                    
+                    // Update mission progress for completing a lesson
+                    await updateMissionProgress(userId, "lesson", 1)
+                  }
+
+                  usersStore.put(user)
+
+                  // Update user in localStorage
+                  localStorage.setItem("lingualearn_user", JSON.stringify(user))
+                  
+                  // Dispatch custom event to notify other components
+                  if (typeof window !== "undefined") {
+                    window.dispatchEvent(new Event("userUpdated"))
+                  }
                 }
 
-                // Update mission progress
-                // updateMissionProgress("lesson", 1)
+                // Update user_stats (global stats)
+                const statsRequest = userStatsStore.get(1)
+                statsRequest.onsuccess = async () => {
+                  const stats = statsRequest.result
+                  if (stats) {
+                    if (isNewCompletion) {
+                      stats.lessonsCompleted = (stats.lessonsCompleted || 0) + 1
+                      userStatsStore.put(stats)
+                    }
 
-                // If perfect score, update mission progress
-                // if (score === 100) {
-                //   updateMissionProgress("perfect_lesson", 1)
-                // }
+                    // If perfect score, update mission progress
+                    if (score === 100) {
+                      await updateMissionProgress(userId, "perfect_lesson", 1)
+                    }
+                  }
 
-                resolve(true)
+                  resolve(true)
+                }
+
+                statsRequest.onerror = () => {
+                  // Still resolve even if stats update fails
+                  resolve(true)
+                }
               }
+
+              userRequest.onerror = () => {
+                reject("Error getting user")
+              }
+            } catch (error) {
+              console.error("Error in completeLessonAndSaveProgress callbacks:", error)
+              resolve(true) // Still resolve as completion was saved
             }
           }
 
@@ -2506,13 +2659,47 @@ export async function saveSpeakingPracticeProgress(
             user.speakingPractice.history = user.speakingPractice.history.slice(-50)
           }
 
+          // Award XP for correct answers
+          if (correct && pronunciationScore >= 70) {
+            const xpEarned = Math.floor(pronunciationScore / 10) // 7-10 XP based on score
+            user.totalXp = (user.totalXp || 0) + xpEarned
+            user.totalPoints = (user.totalPoints || 0) + xpEarned
+
+            // Check if user should level up
+            const newLevel = calculateLevel(user.totalPoints)
+            if (newLevel > user.level) {
+              user.level = newLevel
+            }
+          }
+
           // Update user in database
-          usersStore.put(user)
+          const putRequest = usersStore.put(user)
 
-          // Update user in localStorage
-          localStorage.setItem("lingualearn_user", JSON.stringify(user))
+          putRequest.onsuccess = async () => {
+            // Update user in localStorage
+            localStorage.setItem("lingualearn_user", JSON.stringify(user))
+            
+            // Dispatch custom event to notify other components
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(new Event("userUpdated"))
+            }
 
-          resolve(true)
+            // Update challenge and mission progress
+            try {
+              if (correct) {
+                await updateChallengeProgress(userId, "speaking", 1)
+                await updateMissionProgress(userId, "speaking", 1)
+              }
+            } catch (error) {
+              console.error("Error updating challenge/mission progress:", error)
+            }
+
+            resolve(true)
+          }
+
+          putRequest.onerror = () => {
+            reject("Error updating user")
+          }
         } else {
           reject("User not found")
         }
@@ -2675,63 +2862,75 @@ export async function saveGameResult(result: {
   details: any
 }): Promise<void> {
   try {
-    // Get current user from localStorage
-    const currentUserStr = localStorage.getItem("lingualearn_user")
-    if (!currentUserStr) return
-
-    const currentUser = JSON.parse(currentUserStr)
-    const userId = currentUser.id
+    // Use userId from parameter instead of localStorage
+    const userId = result.userId
 
     const db = await initializeDatabase()
-    const transaction = db.transaction(["users"], "readwrite")
-    const usersStore = transaction.objectStore("users")
-    const request = usersStore.get(userId)
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(["users"], "readwrite")
+      const usersStore = transaction.objectStore("users")
+      const request = usersStore.get(userId)
 
-    request.onsuccess = () => {
-      if (request.result) {
-        const user = request.result
+      request.onsuccess = () => {
+        if (request.result) {
+          const user = request.result
 
-        // Initialize games data if it doesn't exist
-        if (!user.games) {
-          user.games = {}
-        }
-
-        // Initialize specific game data if it doesn't exist
-        if (!user.games[result.gameType]) {
-          user.games[result.gameType] = {
-            bestScore: 0,
-            timesPlayed: 0,
-            history: [],
+          // Initialize games data if it doesn't exist
+          if (!user.games) {
+            user.games = {}
           }
+
+          // Initialize specific game data if it doesn't exist
+          if (!user.games[result.gameType]) {
+            user.games[result.gameType] = {
+              bestScore: 0,
+              timesPlayed: 0,
+              history: [],
+            }
+          }
+
+          // Update game stats
+          user.games[result.gameType].timesPlayed += 1
+          if (result.score > user.games[result.gameType].bestScore) {
+            user.games[result.gameType].bestScore = result.score
+          }
+
+          // Add to history (keep last 20 entries)
+          user.games[result.gameType].history.push({
+            score: result.score,
+            details: result.details,
+            timestamp: result.date,
+          })
+
+          // Limit history size
+          if (user.games[result.gameType].history.length > 20) {
+            user.games[result.gameType].history = user.games[result.gameType].history.slice(-20)
+          }
+
+          // Update user in database
+          const putRequest = usersStore.put(user)
+
+          putRequest.onsuccess = () => {
+            // Update user in localStorage
+            localStorage.setItem("lingualearn_user", JSON.stringify(user))
+            resolve()
+          }
+
+          putRequest.onerror = () => {
+            reject(new Error("Error updating user in database"))
+          }
+        } else {
+          reject(new Error("User not found"))
         }
-
-        // Update game stats
-        user.games[result.gameType].timesPlayed += 1
-        if (result.score > user.games[result.gameType].bestScore) {
-          user.games[result.gameType].bestScore = result.score
-        }
-
-        // Add to history (keep last 20 entries)
-        user.games[result.gameType].history.push({
-          score: result.score,
-          details: result.details,
-          timestamp: result.date,
-        })
-
-        // Limit history size
-        if (user.games[result.gameType].history.length > 20) {
-          user.games[result.gameType].history = user.games[result.gameType].history.slice(-20)
-        }
-
-        // Update user in database
-        usersStore.put(user)
-
-        // Update user in localStorage
-        localStorage.setItem("lingualearn_user", JSON.stringify(user))
       }
-    }
+
+      request.onerror = () => {
+        reject(new Error("Error getting user from database"))
+      }
+    })
   } catch (error) {
     console.error("Error saving game result:", error)
+    throw error
   }
 }
 
@@ -3301,71 +3500,96 @@ export async function saveWritingPracticeProgress(
   userAnswer: string,
 ): Promise<boolean> {
   try {
-    // Get current user from localStorage
-    const currentUserStr = localStorage.getItem("lingualearn_user")
-    if (!currentUserStr) return false
-
-    const currentUser = JSON.parse(currentUserStr)
-    const userId = currentUser.id
-
     const db = await initializeDatabase()
-    const transaction = db.transaction(["users"], "readwrite")
-    const usersStore = transaction!.objectStore("users")
-    const request = usersStore.get(userId)
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(["users"], "readwrite")
+      const usersStore = transaction.objectStore("users")
+      const request = usersStore.get(userId)
 
-    request.onsuccess = () => {
-      if (request.result) {
-        const user = request.result
+      request.onsuccess = async () => {
+        if (request.result) {
+          const user = request.result
 
-        // Initialize writing practice data if it doesn't exist
-        if (!user.practiceStats) {
-          user.practiceStats = {}
-        }
-
-        if (!user.practiceStats.writing) {
-          user.practiceStats.writing = {
-            completed: 0,
-            correctCount: 0,
-            history: [],
+          // Initialize writing practice data if it doesn't exist
+          if (!user.practiceStats) {
+            user.practiceStats = {}
           }
+
+          if (!user.practiceStats.writing) {
+            user.practiceStats.writing = {
+              completed: 0,
+              correctCount: 0,
+              history: [],
+            }
+          }
+
+          // Update writing practice stats
+          user.practiceStats.writing.completed += 1
+          if (correct) {
+            user.practiceStats.writing.correctCount += 1
+            
+            // Award XP for correct answers
+            const xpEarned = 10 // Base XP for correct writing exercise
+            user.totalXp = (user.totalXp || 0) + xpEarned
+            user.totalPoints = (user.totalPoints || 0) + xpEarned
+
+            // Check if user should level up
+            const newLevel = calculateLevel(user.totalPoints)
+            if (newLevel > user.level) {
+              user.level = newLevel
+            }
+          }
+
+          // Add to history (keep last 50 entries)
+          user.practiceStats.writing.history.push({
+            exerciseId,
+            correct,
+            userAnswer,
+            timestamp: new Date().toISOString(),
+          })
+
+          // Limit history size
+          if (user.practiceStats.writing.history.length > 50) {
+            user.practiceStats.writing.history = user.practiceStats.writing.history.slice(-50)
+          }
+
+          // Update user in database
+          const putRequest = usersStore.put(user)
+
+          putRequest.onsuccess = async () => {
+            // Update user in localStorage
+            localStorage.setItem("lingualearn_user", JSON.stringify(user))
+            
+            // Dispatch custom event to notify other components
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(new Event("userUpdated"))
+            }
+
+            // Update challenge and mission progress
+            try {
+              if (correct) {
+                await updateChallengeProgress(userId, "writing", 1)
+                await updateMissionProgress(userId, "writing", 1)
+              }
+            } catch (error) {
+              console.error("Error updating challenge/mission progress:", error)
+            }
+
+            resolve(true)
+          }
+
+          putRequest.onerror = () => {
+            reject("Error updating user")
+          }
+        } else {
+          reject("User not found")
         }
-
-        // Update writing practice stats
-        user.practiceStats.writing.completed += 1
-        if (correct) {
-          user.practiceStats.writing.correctCount += 1
-        }
-
-        // Add to history (keep last 50 entries)
-        user.practiceStats.writing.history.push({
-          exerciseId,
-          correct,
-          userAnswer,
-          timestamp: new Date().toISOString(),
-        })
-
-        // Limit history size
-        if (user.practiceStats.writing.history.length > 50) {
-          user.practiceStats.writing.history = user.practiceStats.writing.history.slice(-50)
-        }
-
-        // Update user in database
-        usersStore.put(user)
-
-        // Update user in localStorage
-        localStorage.setItem("lingualearn_user", JSON.stringify(user))
-
-        // Update mission progress
-        // updateMissionProgress("writing_practice", 1)
-
-        // Check for achievements
-        checkAndUnlockAchievements(userId)
-
-        return true
       }
-    }
 
-    return false
+      request.onerror = () => {
+        reject("Error getting user")
+      }
+    })
   } catch (error) {
     console.error("Error saving writing practice progress:", error)
     return false

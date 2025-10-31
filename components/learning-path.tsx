@@ -39,54 +39,83 @@ export default function LearningPath() {
   const [recommendedLessonNumber, setRecommendedLessonNumber] = useState<number | null>(null)
   const [showRecommendation, setShowRecommendation] = useState(true)
 
-  useEffect(() => {
-    const loadData = async () => {
-      if (!user) {
-        setLoading(false)
-        return
+  const loadData = async () => {
+    if (!user) {
+      setLoading(false)
+      return
+    }
+
+    try {
+      const token = localStorage.getItem("lingualearn_token")
+      const headers = token ? { Authorization: `Bearer ${token}` } : {}
+
+      // Get English lessons (language ID 1 for English)
+      const lessonsRes = await fetch("/api/lessons?languageId=1")
+      if (lessonsRes.ok) {
+        const lessonsData = await lessonsRes.json()
+        console.log("Lessons loaded:", lessonsData.lessons?.length || 0)
+        const lessonsArray = lessonsData.lessons || lessonsData || []
+        setLessons(Array.isArray(lessonsArray) ? lessonsArray : [])
+      } else {
+        console.error("Failed to load lessons:", await lessonsRes.text())
       }
 
-      try {
-        const token = localStorage.getItem("lingualearn_token")
-        const headers = token ? { Authorization: `Bearer ${token}` } : {}
+      // Get user's completed lessons
+      const completionsRes = await fetch("/api/lesson-completions", { headers })
+      if (completionsRes.ok) {
+        const completionsData = await completionsRes.json()
+        console.log("Completions loaded:", completionsData.completions?.length || 0)
+        const completionsArray = completionsData.completions || completionsData || []
+        setCompletedLessons(Array.isArray(completionsArray) ? completionsArray : [])
+      } else {
+        console.error("Failed to load completions:", await completionsRes.text())
+      }
 
-        // Get English lessons (language ID 1)
-        const lessonsRes = await fetch("/api/lessons?languageId=1")
-        if (lessonsRes.ok) {
-          const lessonsData = await lessonsRes.json()
-          setLessons(lessonsData.lessons || [])
-        }
+      // Get recommended starting lesson from user data
+      const recommended = user.recommendedStartingLesson
+      setRecommendedLesson(recommended || null)
 
-        // Get user's completed lessons
-        const completionsRes = await fetch("/api/lesson-completions", { headers })
-        if (completionsRes.ok) {
-          const completionsData = await completionsRes.json()
-          setCompletedLessons(completionsData.completions || [])
-        }
-
-        // Get recommended starting lesson from user data
-        const recommended = user.recommendedStartingLesson
-        setRecommendedLesson(recommended || null)
-
-        // Calculate the sequential lesson number for the recommended lesson
-        if (recommended && lessonsRes.ok) {
-          const lessonsData = await lessonsRes.json()
+      // Calculate the sequential lesson number for the recommended lesson
+      if (recommended) {
+        const lessonsRes2 = await fetch("/api/lessons?languageId=1")
+        if (lessonsRes2.ok) {
+          const lessonsData = await lessonsRes2.json()
           const sortedLessons = [...(lessonsData.lessons || [])].sort((a: Lesson, b: Lesson) => a.lessonOrder - b.lessonOrder)
           const recommendedIndex = sortedLessons.findIndex((lesson: Lesson) => lesson.id === recommended)
           if (recommendedIndex !== -1) {
             setRecommendedLessonNumber(recommendedIndex + 1)
           }
         }
-
-        setLoading(false)
-      } catch (error) {
-        console.error("Error loading learning path data:", error)
-        setLoading(false)
       }
-    }
 
+      setLoading(false)
+    } catch (error) {
+      console.error("Error loading learning path data:", error)
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
     loadData()
   }, [user])
+
+  // Listen for lesson completion updates
+  useEffect(() => {
+    if (!user) return
+
+    const handleLessonCompleted = () => {
+      // Refresh completed lessons when a lesson is completed
+      loadData()
+    }
+
+    window.addEventListener("lessonCompleted", handleLessonCompleted as EventListener)
+    window.addEventListener("userUpdated", handleLessonCompleted as EventListener)
+
+    return () => {
+      window.removeEventListener("lessonCompleted", handleLessonCompleted as EventListener)
+      window.removeEventListener("userUpdated", handleLessonCompleted as EventListener)
+    }
+  }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
     return (

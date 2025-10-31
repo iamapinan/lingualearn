@@ -38,7 +38,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
+  // Function to load user from localStorage
+  const loadUserFromStorage = () => {
     const storedUser = localStorage.getItem("lingualearn_user")
     const storedToken = localStorage.getItem("lingualearn_token")
 
@@ -47,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const parsedUser = JSON.parse(storedUser)
         setUser(parsedUser)
         setToken(storedToken)
+        return parsedUser
       } catch (error) {
         console.error("Error parsing stored user:", error)
         localStorage.removeItem("lingualearn_user")
@@ -55,7 +57,72 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     
     setIsLoading(false)
+    return null
+  }
+
+  // Initial load
+  useEffect(() => {
+    loadUserFromStorage()
+    setIsLoading(false)
   }, [])
+
+  // Listen for updates
+  useEffect(() => {
+    // Listen for storage changes (from other tabs/windows)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "lingualearn_user") {
+        loadUserFromStorage()
+      }
+    }
+
+    window.addEventListener("storage", handleStorageChange)
+
+    // Also listen for custom event for same-tab updates
+    const handleUserUpdate = () => {
+      const storedUser = localStorage.getItem("lingualearn_user")
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser)
+          setUser((prevUser) => {
+            // Only update if data actually changed
+            if (!prevUser || prevUser.totalXp !== parsedUser.totalXp || prevUser.level !== parsedUser.level || prevUser.totalPoints !== parsedUser.totalPoints) {
+              return parsedUser
+            }
+            return prevUser
+          })
+        } catch (error) {
+          console.error("Error parsing user on update:", error)
+        }
+      }
+    }
+
+    window.addEventListener("userUpdated", handleUserUpdate as EventListener)
+
+    // Poll localStorage every 2 seconds for updates (for same-tab updates)
+    const pollInterval = setInterval(() => {
+      const storedUser = localStorage.getItem("lingualearn_user")
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser)
+          setUser((prevUser) => {
+            // Only update if data actually changed
+            if (!prevUser || prevUser.totalXp !== parsedUser.totalXp || prevUser.level !== parsedUser.level || prevUser.totalPoints !== parsedUser.totalPoints) {
+              return parsedUser
+            }
+            return prevUser
+          })
+        } catch (error) {
+          // Ignore parse errors
+        }
+      }
+    }, 2000)
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange)
+      window.removeEventListener("userUpdated", handleUserUpdate as EventListener)
+      clearInterval(pollInterval)
+    }
+  }, []) // No dependencies to avoid infinite loop
 
   const login = (user: User, token: string) => {
     setUser(user)

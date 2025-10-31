@@ -129,7 +129,7 @@ export default function MysteryWheelGame() {
     }
   }
 
-  const checkAnswer = () => {
+  const checkAnswer = async () => {
     if (!selectedItem || !userAnswer.trim()) return
 
     const normalizedUserAnswer = userAnswer.toLowerCase().trim()
@@ -144,7 +144,7 @@ export default function MysteryWheelGame() {
       setGameStatus("correct")
 
       if (user) {
-        saveGameResult({
+        await saveGameResult({
           userId: user.id,
           gameType: "mystery-wheel",
           score: pointsEarned,

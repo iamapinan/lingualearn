@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, use } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -31,10 +31,11 @@ interface Question {
   audioUrl?: string
 }
 
-export default function LessonPage({ params }: { params: { id: string } }) {
+export default function LessonPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const { user } = useAuth()
-  const lessonId = Number.parseInt(params.id)
+  const resolvedParams = use(params)
+  const lessonId = Number.parseInt(resolvedParams.id)
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
@@ -200,13 +201,15 @@ export default function LessonPage({ params }: { params: { id: string } }) {
     setProgress(newProgress)
 
     // Save progress to database
-    saveUserProgress({
-      lessonId,
-      questionId: currentQuestion.id,
-      completed: 1,
-      correct: correct ? 1 : 0,
-      timestamp: new Date().toISOString(),
-    })
+    if (user) {
+      saveUserProgress({
+        lessonId,
+        questionId: currentQuestion.id,
+        completed: 1,
+        correct: correct ? 1 : 0,
+        timestamp: new Date().toISOString(),
+      }, user.id)
+    }
   }
 
   const nextQuestion = async () => {
@@ -244,15 +247,44 @@ export default function LessonPage({ params }: { params: { id: string } }) {
 
       // Mark lesson as completed in the database
       if (user) {
-        await completeLessonAndSaveProgress(user.id, lessonId, score, questions.length, correctAnswers)
-      }
+        // Save to IndexedDB
+        await completeLessonAndSaveProgress(
+          user.id,
+          lessonId,
+          score,
+          questions.length,
+          correctAnswers,
+          lessonXP, // Pass XP earned
+        )
 
-      // Update user stats in database
-      updateUserStats({
-        // currentStreak: 5, // We'd normally increment this
-        totalXp: 120 + xpEarned,
-        lessonsCompleted: 8 + 1,
-      })
+        // Also save to MySQL database via API
+        try {
+          const token = localStorage.getItem("lingualearn_token")
+          if (token) {
+            await fetch("/api/lesson-completions", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                lessonId,
+                score,
+                totalQuestions: questions.length,
+                correctAnswers,
+                xpEarned: lessonXP,
+              }),
+            })
+          }
+        } catch (error) {
+          console.error("Error saving lesson completion to MySQL:", error)
+        }
+        
+        // Dispatch event to notify learning path component
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("lessonCompleted"))
+        }
+      }
     }
   }
 
