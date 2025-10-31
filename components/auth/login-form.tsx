@@ -89,17 +89,6 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps) {
         {isLoading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
       </Button>
 
-      <div className="text-center text-sm">
-        <span className="text-gray-600">ยังไม่มีบัญชี? </span>
-        <button
-          type="button"
-          onClick={onSwitchToRegister}
-          className="text-indigo-600 hover:underline"
-          disabled={isLoading}
-        >
-          ลงทะเบียน
-        </button>
-      </div>
     </form>
   )
 }

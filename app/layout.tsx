@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/components/auth-provider"
 import { Sidebar } from "@/components/sidebar"
 import { AssessmentRedirect } from "@/components/assessment-redirect"
+import { SidebarLayout } from "@/components/sidebar-layout"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -27,9 +28,9 @@ export default function RootLayout({
             <AssessmentRedirect>
               <div className="flex min-h-screen">
                 <Sidebar />
-                <div className="flex-1 transition-all duration-300 md:ml-[70px] sidebar-expanded:md:ml-[240px]">
-                  <main className="flex-1">{children}</main>
-                </div>
+                <SidebarLayout>
+                  {children}
+                </SidebarLayout>
               </div>
             </AssessmentRedirect>
           </AuthProvider>

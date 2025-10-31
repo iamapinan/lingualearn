@@ -40,16 +40,8 @@ export function Sidebar({ className, ...props }: SidebarProps) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const isDesktop = useMediaQuery("(min-width: 768px)")
-  const { user, logout } = useAuth()
-  const [showSidebar, setShowSidebar] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const { user, logout, isLoading } = useAuth()
   const { expanded, toggleSidebar } = useSidebarState()
-
-  // Always show sidebar (assessment check disabled)
-  useEffect(() => {
-    setShowSidebar(true)
-    setLoading(false)
-  }, [user])
 
   // Close mobile sidebar when route changes
   useEffect(() => {
@@ -62,6 +54,11 @@ export function Sidebar({ className, ...props }: SidebarProps) {
       setOpen(false)
     }
   }, [pathname, isDesktop])
+
+  // ซ่อน sidebar หากยังไม่ได้เข้าสู่ระบบ (ต้องอยู่หลัง hooks)
+  if (isLoading || !user) {
+    return null
+  }
 
   const sidebarVariants = {
     hidden: { opacity: 0, x: -20 },

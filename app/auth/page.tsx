@@ -52,16 +52,10 @@ export default function AuthPage() {
             <TabsContent value="login">
               <LoginForm
                 onSuccess={handleAuthSuccess}
-                onSwitchToRegister={() => setActiveTab("register")}
+                onSwitchToRegister={() => setActiveTab("login")}
               />
             </TabsContent>
             
-            <TabsContent value="register">
-              <RegisterForm
-                onSuccess={handleAuthSuccess}
-                onSwitchToLogin={() => setActiveTab("login")}
-              />
-            </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
