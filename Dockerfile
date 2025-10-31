@@ -17,9 +17,24 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Set environment variables for build
-ENV NEXT_TELEMETRY_DISABLED 1
-ENV NODE_ENV production
+# Set build-time environment variables
+ARG DB_HOST=localhost
+ARG DB_PORT=3306
+ARG DB_USER=lingualearn
+ARG DB_PASSWORD=lingualearn_password
+ARG DB_NAME=lingualearn_db
+ARG JWT_SECRET=default_jwt_secret_change_in_production_min_32_chars
+ARG NEXT_PUBLIC_APP_URL=http://localhost:3010
+
+ENV DB_HOST=$DB_HOST
+ENV DB_PORT=$DB_PORT
+ENV DB_USER=$DB_USER
+ENV DB_PASSWORD=$DB_PASSWORD
+ENV DB_NAME=$DB_NAME
+ENV JWT_SECRET=$JWT_SECRET
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
 
 # Build the application
 RUN npm run build

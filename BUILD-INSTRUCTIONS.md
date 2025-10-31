@@ -2,14 +2,24 @@
 
 ## ขั้นตอนการ Build
 
-### 1. เตรียม Environment
+### 1. เตรียม Environment (Optional)
 ```bash
-# สร้างไฟล์ .env
-cp .env.example .env
+# สร้างไฟล์ .env (ถ้าต้องการ override ค่า default)
+cp env-template.txt .env
 
-# แก้ไข .env (สำคัญ! เปลี่ยน JWT_SECRET)
+# แก้ไข .env
 nano .env
+
+# หรือสร้างแบบง่ายๆ
+cat > .env << 'EOF'
+MYSQL_USER=lingualearn
+MYSQL_PASSWORD=lingualearn123
+JWT_SECRET=your-secret-key-change-this-in-production-min-32-chars
+NEXT_PUBLIC_APP_URL=http://localhost:3010
+EOF
 ```
+
+**หมายเหตุ:** ถ้าไม่สร้าง .env ระบบจะใช้ค่า default ที่กำหนดใน docker-compose.yml
 
 ### 2. สร้าง package-lock.json (ถ้ายังไม่มี)
 ```bash

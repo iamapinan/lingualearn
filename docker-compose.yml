@@ -5,13 +5,26 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - DB_HOST=db
+        - DB_PORT=3306
+        - DB_USER=${MYSQL_USER:-lingualearn}
+        - DB_PASSWORD=${MYSQL_PASSWORD:-lingualearn123}
+        - DB_NAME=lingualearn_db
+        - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-this-in-production}
+        - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3010}
     container_name: lingualearn-app
     ports:
       - "3010:3000"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=${DATABASE_URL:-mysql://user:password@db:3306/lingualearn_db}
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USER=${MYSQL_USER:-lingualearn}
+      - DB_PASSWORD=${MYSQL_PASSWORD:-lingualearn123}
+      - DB_NAME=lingualearn_db
       - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-this-in-production}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3010}
     volumes:
       - ./data:/app/data
     depends_on:
