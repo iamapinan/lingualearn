@@ -58,8 +58,8 @@ export default function HangmanGame() {
 
   const startNewGame = () => {
     const randomWord = getRandomVocabulary()
-    setWord(randomWord.english.toUpperCase())
-    setHint(randomWord.thai)
+    setWord(randomWord.word.toUpperCase())
+    setHint(randomWord.translation)
     setCategory(randomWord.category)
     setGuessedLetters([])
     setWrongAttempts(0)

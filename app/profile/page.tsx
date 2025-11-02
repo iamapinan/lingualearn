@@ -7,9 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
-import { Trophy, Star, BookOpen, Calendar, Clock, Award, Flame, Target, TrendingUp, KeyRound } from "lucide-react"
+import { Trophy, Star, BookOpen, Calendar, Clock, Award, Flame, Target, TrendingUp, KeyRound, User } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
 import { ChangePasswordDialog } from "@/components/auth/change-password-dialog"
+import { EditNameDialog } from "@/components/auth/edit-name-dialog"
 import {
   getUserStats,
   getUserCompletedLessons,
@@ -20,13 +21,14 @@ import { calculateLevelFromXP, calculateXPForNextLevel, calculateLevelProgress }
 
 export default function ProfilePage() {
   const router = useRouter()
-  const { user, token } = useAuth()
+  const { user, token, updateUser } = useAuth()
   const [stats, setStats] = useState<any>(null)
   const [completedLessons, setCompletedLessons] = useState<any[]>([])
   const [languageProgress, setLanguageProgress] = useState<{ [key: string]: number }>({})
   const [badges, setBadges] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [changePasswordDialogOpen, setChangePasswordDialogOpen] = useState(false)
+  const [editNameDialogOpen, setEditNameDialogOpen] = useState(false)
 
   useEffect(() => {
     const loadProfileData = async () => {
@@ -122,6 +124,33 @@ export default function ProfilePage() {
     alert("เปลี่ยนรหัสผ่านสำเร็จ")
   }
 
+  const handleUpdateName = async (newName: string) => {
+    if (!token) {
+      throw new Error("ไม่พบ token การยืนยันตัวตน")
+    }
+
+    const response = await fetch("/api/users/me", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ name: newName }),
+    })
+
+    if (!response.ok) {
+      const data = await response.json()
+      throw new Error(data.error || "ไม่สามารถอัปเดตชื่อได้")
+    }
+
+    const data = await response.json()
+    
+    // อัปเดต user ใน context
+    updateUser(data.user)
+
+    alert("อัปเดตชื่อสำเร็จ")
+  }
+
   return (
     <div className="container max-w-6xl mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row gap-6 mb-8">
@@ -146,15 +175,26 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="w-fit"
-                  onClick={() => setChangePasswordDialogOpen(true)}
-                >
-                  <KeyRound className="h-4 w-4 mr-2" />
-                  เปลี่ยนรหัสผ่าน
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-fit"
+                    onClick={() => setEditNameDialogOpen(true)}
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    แก้ไขชื่อ
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-fit"
+                    onClick={() => setChangePasswordDialogOpen(true)}
+                  >
+                    <KeyRound className="h-4 w-4 mr-2" />
+                    เปลี่ยนรหัสผ่าน
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -411,6 +451,12 @@ export default function ProfilePage() {
         </div>
       </div>
 
+      <EditNameDialog
+        open={editNameDialogOpen}
+        onClose={() => setEditNameDialogOpen(false)}
+        onUpdateName={handleUpdateName}
+        currentName={user.name}
+      />
       <ChangePasswordDialog
         open={changePasswordDialogOpen}
         onClose={() => setChangePasswordDialogOpen(false)}
