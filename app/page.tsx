@@ -27,6 +27,7 @@ import { useAuth } from "@/components/auth-provider"
 import LearningPath from "@/components/learning-path"
 import { calculateLevelFromXP, calculateXPForNextLevel, calculateLevelProgress } from "@/lib/scoring-system"
 import { GameCard } from "@/components/game-card"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
 export default function HomePage() {
   const router = useRouter()
@@ -190,11 +191,12 @@ export default function HomePage() {
             </div>
           </div>
           <div className="flex-shrink-0 w-32 h-32 relative">
-            <div className="absolute inset-0 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-              <div className="w-full h-full flex items-center justify-center text-5xl font-bold text-white">
+            <Avatar className="w-32 h-32 border-4 border-white/20">
+              <AvatarImage src={user.avatar || "/default-avatar.svg"} alt={user.name} className="bg-white/20 backdrop-blur-sm" />
+              <AvatarFallback className="bg-white/20 backdrop-blur-sm text-white text-5xl font-bold">
                 {user.name.charAt(0).toUpperCase()}
-              </div>
-            </div>
+              </AvatarFallback>
+            </Avatar>
           </div>
         </div>
       </div>

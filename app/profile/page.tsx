@@ -11,6 +11,7 @@ import { Trophy, Star, BookOpen, Calendar, Clock, Award, Flame, Target, Trending
 import { useAuth } from "@/components/auth-provider"
 import { ChangePasswordDialog } from "@/components/auth/change-password-dialog"
 import { EditNameDialog } from "@/components/auth/edit-name-dialog"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import {
   getUserStats,
   getUserCompletedLessons,
@@ -159,11 +160,12 @@ export default function ProfilePage() {
             <CardContent className="p-6">
               <div className="flex flex-col gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="relative w-20 h-20 rounded-full overflow-hidden bg-indigo-100">
-                    <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-indigo-500">
+                  <Avatar className="w-20 h-20">
+                    <AvatarImage src={user.avatar || "/default-avatar.svg"} alt={user.name} />
+                    <AvatarFallback className="bg-indigo-100 text-indigo-500 text-2xl font-bold">
                       {user.name.charAt(0).toUpperCase()}
-                    </div>
-                  </div>
+                    </AvatarFallback>
+                  </Avatar>
                   <div className="flex-1">
                     <h1 className="text-2xl font-bold">{user.name}</h1>
                     <p className="text-gray-500">Joined {new Date(user.joinedDate).toLocaleDateString()}</p>

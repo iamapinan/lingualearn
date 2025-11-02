@@ -7,6 +7,7 @@ interface User {
   name: string
   email: string
   role?: "user" | "admin"
+  avatar?: string
   totalXp: number
   lessonsCompleted: number
   level: number
