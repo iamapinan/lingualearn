@@ -99,15 +99,15 @@ export default function GamesPage() {
           <TabsContent value="all">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
               {games.map((game) => (
-                <div key={game.id} onClick={() => handleGameClick(game.id)} className="cursor-pointer">
-                  <GameCard
-                    title={game.title}
-                    description={game.description}
-                    imageSrc={game.image}
-                    difficulty={game.difficulty}
-                    xpReward={game.xpReward}
-                  />
-                </div>
+                <GameCard
+                  key={game.id}
+                  title={game.title}
+                  description={game.description}
+                  imageSrc={game.image}
+                  difficulty={game.difficulty}
+                  xpReward={game.xpReward}
+                  onClick={() => handleGameClick(game.id)}
+                />
               ))}
             </div>
           </TabsContent>
@@ -117,15 +117,15 @@ export default function GamesPage() {
               {games
                 .filter((game) => game.category === "vocabulary")
                 .map((game) => (
-                  <div key={game.id} onClick={() => handleGameClick(game.id)} className="cursor-pointer">
-                    <GameCard
-                      title={game.title}
-                      description={game.description}
-                      imageSrc={game.image}
-                      difficulty={game.difficulty}
-                      xpReward={game.xpReward}
-                    />
-                  </div>
+                  <GameCard
+                    key={game.id}
+                    title={game.title}
+                    description={game.description}
+                    imageSrc={game.image}
+                    difficulty={game.difficulty}
+                    xpReward={game.xpReward}
+                    onClick={() => handleGameClick(game.id)}
+                  />
                 ))}
             </div>
           </TabsContent>
@@ -135,15 +135,15 @@ export default function GamesPage() {
               {games
                 .filter((game) => game.category === "translation")
                 .map((game) => (
-                  <div key={game.id} onClick={() => handleGameClick(game.id)} className="cursor-pointer">
-                    <GameCard
-                      title={game.title}
-                      description={game.description}
-                      imageSrc={game.image}
-                      difficulty={game.difficulty}
-                      xpReward={game.xpReward}
-                    />
-                  </div>
+                  <GameCard
+                    key={game.id}
+                    title={game.title}
+                    description={game.description}
+                    imageSrc={game.image}
+                    difficulty={game.difficulty}
+                    xpReward={game.xpReward}
+                    onClick={() => handleGameClick(game.id)}
+                  />
                 ))}
             </div>
           </TabsContent>

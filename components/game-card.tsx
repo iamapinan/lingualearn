@@ -33,14 +33,23 @@ export function GameCard({
     hard: "bg-red-100 text-red-700",
   }
 
+  const handleImageClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (onClick) {
+      onClick()
+    } else if (href) {
+      window.location.href = href
+    }
+  }
+
   return (
-    <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer">
-      <div className="relative h-[240px]">
+    <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg">
+      <div className="relative h-[240px] cursor-pointer" onClick={handleImageClick}>
         <Image
           src={imageSrc || "/placeholder.svg?height=200&width=300&query=educational game"}
           alt={title}
           fill
-          className="object-cover w-full h-240"
+          className="object-cover w-full h-240 transition-transform duration-300 hover:scale-105"
         />
         <div className="absolute top-2 right-2">
           <span className={`px-2 py-1 rounded-full text-xs font-medium ${difficultyColor[difficulty]}`}>
@@ -68,7 +77,9 @@ export function GameCard({
 
         {timesPlayed !== undefined && <p className="text-xs text-gray-400 mb-3">Played {timesPlayed} times</p>}
 
-        <Button className="w-full bg-indigo-500 hover:bg-indigo-600">Play Now</Button>
+        <Button className="w-full bg-indigo-500 hover:bg-indigo-600" onClick={onClick}>
+          Play Now
+        </Button>
       </CardContent>
     </Card>
   )
