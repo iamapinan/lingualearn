@@ -91,10 +91,10 @@ export default function ProfilePage() {
     )
   }
 
-  // คำนวณระดับและความก้าวหน้า
-  const userLevel = calculateLevelFromXP(stats?.totalXp || 0)
-  const xpForNextLevel = calculateXPForNextLevel(stats?.totalXp || 0)
-  const levelProgress = calculateLevelProgress(stats?.totalXp || 0)
+  // คำนวณระดับและความก้าวหน้า (ใช้ user.totalXp เพื่อให้ตรงกับหน้า Home)
+  const userLevel = calculateLevelFromXP(user.totalXp || 0)
+  const xpForNextLevel = calculateXPForNextLevel(user.totalXp || 0)
+  const levelProgress = calculateLevelProgress(user.totalXp || 0)
 
   // คำนวณสถิติเพิ่มเติม
   const totalLessonsCompleted = completedLessons.length
@@ -209,7 +209,7 @@ export default function ProfilePage() {
                   <h2 className="text-lg font-bold">Level Progress</h2>
                 </div>
                 <div className="text-sm text-gray-500">
-                  {stats?.totalXp || 0} XP / {(stats?.totalXp || 0) + xpForNextLevel} XP
+                  {user.totalXp || 0} XP / {(user.totalXp || 0) + xpForNextLevel} XP
                 </div>
               </div>
               <Progress value={levelProgress} className="h-2 mb-4" />
@@ -279,7 +279,7 @@ export default function ProfilePage() {
                         <Star className="h-5 w-5 text-indigo-500" />
                         <h3 className="font-semibold">XP</h3>
                       </div>
-                      <p className="text-2xl font-bold">{stats?.totalXp || 0}</p>
+                      <p className="text-2xl font-bold">{user.totalXp || 0}</p>
                       <p className="text-sm text-gray-500">total points</p>
                     </div>
                     <div className="bg-indigo-50 p-4 rounded-lg">
