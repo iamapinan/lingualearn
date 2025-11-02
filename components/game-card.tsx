@@ -77,7 +77,7 @@ export function GameCard({
 
         {timesPlayed !== undefined && <p className="text-xs text-gray-400 mb-3">Played {timesPlayed} times</p>}
 
-        <Button className="w-full bg-indigo-500 hover:bg-indigo-600" onClick={onClick}>
+        <Button type="button" className="w-full bg-indigo-500 hover:bg-indigo-600" onClick={onClick}>
           Play Now
         </Button>
       </CardContent>
