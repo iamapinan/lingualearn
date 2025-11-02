@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
@@ -23,7 +24,6 @@ import {
   Award,
   History,
   Gamepad2,
-  Sparkles,
   BookText,
   Trophy,
   Flame,
@@ -183,7 +183,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
       >
         <div className={cn("p-6 flex items-center", expanded ? "justify-between" : "justify-center")}>
           <Link href="/" className={cn("flex items-center gap-2 font-semibold", !expanded && "justify-center")}>
-            <Sparkles className="h-5 w-5 text-indigo-500" />
+            <Image src="/logo.svg" alt="LinguaLearn Logo" width={24} height={24} className="flex-shrink-0" />
             {expanded && <span>LinguaLearn</span>}
           </Link>
           <Button
@@ -266,7 +266,7 @@ function MobileSidebar({ navItems, pathname, onLogout }: { navItems: any[]; path
     <div className="flex h-full flex-col bg-background">
       <div className="p-6">
         <Link href="/" className="flex items-center gap-2 font-semibold">
-          <Sparkles className="h-5 w-5 text-indigo-500" />
+          <Image src="/logo.svg" alt="LinguaLearn Logo" width={24} height={24} className="flex-shrink-0" />
           <span>LinguaLearn</span>
         </Link>
       </div>

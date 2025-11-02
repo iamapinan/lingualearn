@@ -7,12 +7,25 @@ import { AuthProvider } from "@/components/auth-provider"
 import { Sidebar } from "@/components/sidebar"
 import { AssessmentRedirect } from "@/components/assessment-redirect"
 import { SidebarLayout } from "@/components/sidebar-layout"
+import { PWAInstallPrompt } from "@/components/pwa-install-prompt"
+import { RegisterServiceWorker } from "@/app/register-sw"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "LinguaLearn - Language Learning App",
   description: "Learn languages with fun, bite-sized lessons",
+  manifest: "/manifest.json",
+  themeColor: "#6366F1",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "LinguaLearn",
+  },
+  icons: {
+    icon: "/logo.svg",
+    apple: "/logo.svg",
+  },
 }
 
 export default function RootLayout({
@@ -32,6 +45,8 @@ export default function RootLayout({
                   {children}
                 </SidebarLayout>
               </div>
+              <PWAInstallPrompt />
+              <RegisterServiceWorker />
             </AssessmentRedirect>
           </AuthProvider>
         </ThemeProvider>
