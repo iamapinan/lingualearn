@@ -5,102 +5,113 @@ import { PageContainer } from "@/components/page-container"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { Volume2, Check, X } from "lucide-react"
+import { Volume2, Check, X, Globe } from "lucide-react"
 
-const exercises = [
+const accentExercises = [
   {
     id: 1,
-    audio: "hello",
-    text: "Hello",
-    options: ["Hello", "Help", "Hill", "Hall"],
-    correct: "Hello",
+    accent: "British",
+    country: "🇬🇧 United Kingdom",
+    text: "I can't believe it. The queue is quite long today.",
+    question: "What does 'queue' mean?",
+    options: ["รถ", "คิว/แถว", "คำถาม", "ของขวัญ"],
+    correct: "คิว/แถว",
+    hint: "In British English, 'queue' means waiting in line.",
   },
   {
     id: 2,
-    audio: "thank-you",
-    text: "Thank you",
-    options: ["Thank you", "Think you", "Tank you", "Thanks"],
-    correct: "Thank you",
+    accent: "American",
+    country: "🇺🇸 United States",
+    text: "Let me grab my elevator to go upstairs.",
+    question: "What does 'elevator' mean?",
+    options: ["บันได", "ลิฟต์", "ประตู", "หน้าต่าง"],
+    correct: "ลิฟต์",
+    hint: "Americans say 'elevator', British say 'lift'.",
   },
   {
     id: 3,
-    audio: "good-morning",
-    text: "Good morning",
-    options: ["Good morning", "Good evening", "Good night", "Good afternoon"],
-    correct: "Good morning",
+    accent: "Australian",
+    country: "🇦🇺 Australia",
+    text: "G'day mate! Fancy a cuppa in the arvo?",
+    question: "What does 'arvo' mean?",
+    options: ["เช้า", "เที่ยง", "บ่าย", "เย็น"],
+    correct: "บ่าย",
+    hint: "Australian slang for 'afternoon'.",
   },
   {
     id: 4,
-    audio: "how-are-you",
-    text: "How are you?",
-    options: ["How are you?", "Who are you?", "Where are you?", "What are you?"],
-    correct: "How are you?",
+    accent: "Canadian",
+    country: "🇨🇦 Canada",
+    text: "I left my tuque in the house. It's a chilly day, eh?",
+    question: "What does 'tuque' mean?",
+    options: ["รองเท้า", "หมวก", "เสื้อ", "กระเป๋า"],
+    correct: "หมวก",
+    hint: "Canadian word for 'beanie' or 'winter hat'.",
   },
   {
     id: 5,
-    audio: "nice-to-meet-you",
-    text: "Nice to meet you",
-    options: ["Nice to meet you", "Nice to see you", "Glad to meet you", "Happy to meet you"],
-    correct: "Nice to meet you",
+    accent: "Indian",
+    country: "🇮🇳 India",
+    text: "Could you please prepone the meeting to tomorrow?",
+    question: "What does 'prepone' mean?",
+    options: ["เลื่อนออกไป", "ยกเลิก", "เลื่อนมาเร็วขึ้น", "ยืนยัน"],
+    correct: "เลื่อนมาเร็วขึ้น",
+    hint: "Opposite of 'postpone' in Indian English.",
   },
   {
     id: 6,
-    audio: "goodbye",
-    text: "Goodbye",
-    options: ["Goodbye", "Good day", "Good luck", "Good job"],
-    correct: "Goodbye",
+    accent: "Irish",
+    country: "🇮🇪 Ireland",
+    text: "The crack was mighty last night at the pub.",
+    question: "What does 'crack' mean here?",
+    options: ["เสียงแตก", "ปัญหา", "ความสนุก", "การแทง"],
+    correct: "ความสนุก",
+    hint: "Irish slang for fun and entertainment.",
   },
   {
     id: 7,
-    audio: "please",
-    text: "Please",
-    options: ["Please", "Peace", "Price", "Place"],
-    correct: "Please",
-  },
-  {
-    id: 8,
-    audio: "sorry",
-    text: "Sorry",
-    options: ["Sorry", "Starry", "Story", "Stare"],
-    correct: "Sorry",
-  },
-  {
-    id: 9,
-    audio: "excuse-me",
-    text: "Excuse me",
-    options: ["Excuse me", "Excuse him", "Excuse her", "Excuse us"],
-    correct: "Excuse me",
-  },
-  {
-    id: 10,
-    audio: "you-are-welcome",
-    text: "You are welcome",
-    options: ["You are welcome", "You are coming", "You are going", "You are leaving"],
-    correct: "You are welcome",
+    accent: "South African",
+    country: "🇿🇦 South Africa",
+    text: "Howzit! I'm just popping to the shop for some biltong.",
+    question: "What is 'biltong'?",
+    options: ["ขนม", "เนื้อแห้ง", "ขนมปัง", "น้ำ"],
+    correct: "เนื้อแห้ง",
+    hint: "Traditional South African dried meat.",
   },
 ]
 
-export default function ListeningBasicsPage() {
+export default function ListeningAccentsPage() {
   const [currentExercise, setCurrentExercise] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
   const [showResult, setShowResult] = useState(false)
   const [score, setScore] = useState(0)
   const [completed, setCompleted] = useState(false)
-  const [shuffledExercises, setShuffledExercises] = useState(exercises)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [showHint, setShowHint] = useState(false)
+  const [shuffledExercises, setShuffledExercises] = useState(accentExercises)
 
   useEffect(() => {
-    const shuffled = [...exercises].sort(() => Math.random() - 0.5)
+    const shuffled = [...accentExercises].sort(() => Math.random() - 0.5)
     setShuffledExercises(shuffled)
   }, [])
 
   const exercise = shuffledExercises[currentExercise]
   const progress = ((currentExercise + 1) / shuffledExercises.length) * 100
 
-  const playAudio = () => {
+  const playAudio = async () => {
+    setIsPlaying(true)
+    
     const utterance = new SpeechSynthesisUtterance(exercise.text)
     utterance.lang = "en-US"
-    utterance.rate = 0.8
-    window.speechSynthesis.speak(utterance)
+    utterance.rate = 0.7
+    utterance.pitch = 1.0
+    
+    await new Promise((resolve) => {
+      utterance.onend = resolve
+      window.speechSynthesis.speak(utterance)
+    })
+    
+    setIsPlaying(false)
   }
 
   const checkAnswer = () => {
@@ -111,6 +122,7 @@ export default function ListeningBasicsPage() {
       setScore(score + 1)
     }
     setShowResult(true)
+    setShowHint(true)
   }
 
   const nextExercise = () => {
@@ -118,6 +130,7 @@ export default function ListeningBasicsPage() {
       setCurrentExercise(currentExercise + 1)
       setSelectedAnswer(null)
       setShowResult(false)
+      setShowHint(false)
     } else {
       setCompleted(true)
     }
@@ -157,8 +170,8 @@ export default function ListeningBasicsPage() {
     <PageContainer>
       <div className="max-w-2xl mx-auto space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Basic Listening Comprehension</h1>
-          <p className="text-gray-600 mt-1">ฟังและเลือกคำที่ถูกต้อง</p>
+          <h1 className="text-3xl font-bold">Accent Training</h1>
+          <p className="text-gray-600 mt-1">ฝึกฟังสำเนียงภาษาอังกฤษจากทั่วโลก</p>
         </div>
 
         <div className="space-y-2">
@@ -171,13 +184,20 @@ export default function ListeningBasicsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Exercise {currentExercise + 1}</CardTitle>
+            <div className="flex items-center gap-3">
+              <Globe className="h-6 w-6 text-indigo-600" />
+              <div>
+                <CardTitle>{exercise.accent} English</CardTitle>
+                <p className="text-sm text-gray-500 mt-1">{exercise.country}</p>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex justify-center">
               <Button
                 size="lg"
                 onClick={playAudio}
+                disabled={isPlaying}
                 className="bg-indigo-500 hover:bg-indigo-600 h-32 w-32 rounded-full"
               >
                 <Volume2 className="h-12 w-12" />
@@ -185,10 +205,17 @@ export default function ListeningBasicsPage() {
             </div>
 
             <div className="text-center text-gray-600">
-              <p>คลิกปุ่มเพื่อฟังเสียง</p>
+              <p>{isPlaying ? "กำลังเล่นเสียง..." : "คลิกปุ่มเพื่อฟังสำเนียง"}</p>
+            </div>
+
+            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <p className="font-semibold text-gray-700 mb-2">ประโยคที่พูด:</p>
+              <p className="text-gray-800 text-lg italic">{exercise.text}</p>
             </div>
 
             <div className="space-y-3">
+              <p className="font-semibold">{exercise.question}</p>
+              
               {exercise.options.map((option) => (
                 <button
                   key={option}
@@ -218,6 +245,14 @@ export default function ListeningBasicsPage() {
                 </button>
               ))}
             </div>
+
+            {showResult && showHint && (
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800">
+                  <span className="font-semibold">💡 Tip:</span> {exercise.hint}
+                </p>
+              </div>
+            )}
 
             {showResult ? (
               <div className="space-y-3">

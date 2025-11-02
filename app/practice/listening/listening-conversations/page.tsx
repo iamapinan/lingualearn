@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { PageContainer } from "@/components/page-container"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -41,6 +41,73 @@ const conversations = [
     ],
     correct: "Next to the bank",
   },
+  {
+    id: 3,
+    dialogue: [
+      { speaker: "A", text: "What would you like to eat?" },
+      { speaker: "B", text: "I'd like a hamburger and fries, please." },
+      { speaker: "A", text: "Anything to drink?" },
+      { speaker: "B", text: "Yes, a cola, please." },
+    ],
+    question: "What does B want to drink?",
+    options: [
+      "Water",
+      "Juice",
+      "A cola",
+      "Coffee",
+    ],
+    correct: "A cola",
+  },
+  {
+    id: 4,
+    dialogue: [
+      { speaker: "A", text: "Do you have plans for this evening?" },
+      { speaker: "B", text: "Yes, I'm going to the cinema with my sister." },
+      { speaker: "A", text: "That sounds fun. What movie?" },
+      { speaker: "B", text: "The new action movie. We're both excited!" },
+    ],
+    question: "Who is B going with?",
+    options: [
+      "A friend",
+      "His sister",
+      "Alone",
+      "His mother",
+    ],
+    correct: "His sister",
+  },
+  {
+    id: 5,
+    dialogue: [
+      { speaker: "A", text: "I'm sorry I'm late. The bus was delayed." },
+      { speaker: "B", text: "That's okay. We just started." },
+      { speaker: "A", text: "Great, I don't want to miss anything important." },
+    ],
+    question: "Why was A late?",
+    options: [
+      "Got lost",
+      "The bus was delayed",
+      "Overslept",
+      "Forgot the time",
+    ],
+    correct: "The bus was delayed",
+  },
+  {
+    id: 6,
+    dialogue: [
+      { speaker: "A", text: "What's your favorite subject in school?" },
+      { speaker: "B", text: "I really enjoy science. It's so interesting!" },
+      { speaker: "A", text: "Me too! Especially chemistry." },
+      { speaker: "B", text: "Yes, chemistry is my favorite part." },
+    ],
+    question: "What is B's favorite subject?",
+    options: [
+      "Math",
+      "Science",
+      "English",
+      "History",
+    ],
+    correct: "Science",
+  },
 ]
 
 export default function ListeningConversationsPage() {
@@ -50,9 +117,15 @@ export default function ListeningConversationsPage() {
   const [score, setScore] = useState(0)
   const [completed, setCompleted] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [shuffledConversations, setShuffledConversations] = useState(conversations)
 
-  const conversation = conversations[currentExercise]
-  const progress = ((currentExercise + 1) / conversations.length) * 100
+  useEffect(() => {
+    const shuffled = [...conversations].sort(() => Math.random() - 0.5)
+    setShuffledConversations(shuffled)
+  }, [])
+
+  const conversation = shuffledConversations[currentExercise]
+  const progress = ((currentExercise + 1) / shuffledConversations.length) * 100
 
   const playConversation = async () => {
     setIsPlaying(true)
@@ -84,7 +157,7 @@ export default function ListeningConversationsPage() {
   }
 
   const nextExercise = () => {
-    if (currentExercise < conversations.length - 1) {
+    if (currentExercise < shuffledConversations.length - 1) {
       setCurrentExercise(currentExercise + 1)
       setSelectedAnswer(null)
       setShowResult(false)
@@ -103,10 +176,10 @@ export default function ListeningConversationsPage() {
             </CardHeader>
             <CardContent className="text-center space-y-4">
               <div className="text-6xl font-bold text-indigo-600">
-                {score}/{conversations.length}
+                {score}/{shuffledConversations.length}
               </div>
               <p className="text-xl">
-                คะแนนของคุณ: {Math.round((score / conversations.length) * 100)}%
+                คะแนนของคุณ: {Math.round((score / shuffledConversations.length) * 100)}%
               </p>
               <div className="space-x-4">
                 <Button onClick={() => window.location.reload()}>
@@ -134,7 +207,7 @@ export default function ListeningConversationsPage() {
         <div className="space-y-2">
           <div className="flex justify-between text-sm text-gray-600">
             <span>Progress</span>
-            <span>{currentExercise + 1} / {conversations.length}</span>
+            <span>{currentExercise + 1} / {shuffledConversations.length}</span>
           </div>
           <Progress value={progress} />
         </div>
@@ -214,7 +287,7 @@ export default function ListeningConversationsPage() {
                   </div>
                 )}
                 <Button onClick={nextExercise} className="w-full">
-                  {currentExercise < conversations.length - 1 ? "ข้อถัดไป" : "เสร็จสิ้น"}
+                  {currentExercise < shuffledConversations.length - 1 ? "ข้อถัดไป" : "เสร็จสิ้น"}
                 </Button>
               </div>
             ) : (

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { PageContainer } from "@/components/page-container"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -22,6 +22,27 @@ const exercises = [
     options: ["Every Saturday", "Every Sunday", "Every Monday", "Every Friday"],
     correct: "Every Saturday",
   },
+  {
+    id: 3,
+    passage: "The library is open from Monday to Friday. It closes at 6 PM every day. Students love to study there because it's quiet.",
+    question: "What time does the library close?",
+    options: ["At 5 PM", "At 6 PM", "At 7 PM", "At 8 PM"],
+    correct: "At 6 PM",
+  },
+  {
+    id: 4,
+    passage: "Peter has a pet dog named Max. Max loves to play fetch in the backyard. Peter takes Max for a walk every evening.",
+    question: "What is the dog's name?",
+    options: ["Tom", "Max", "Sam", "Jack"],
+    correct: "Max",
+  },
+  {
+    id: 5,
+    passage: "Maria enjoys cooking. She makes delicious pasta for her family every Sunday. Her children love her cooking very much.",
+    question: "What does Maria cook every Sunday?",
+    options: ["Rice", "Pasta", "Pizza", "Bread"],
+    correct: "Pasta",
+  },
 ]
 
 export default function ReadingBasicsPage() {
@@ -30,9 +51,15 @@ export default function ReadingBasicsPage() {
   const [showResult, setShowResult] = useState(false)
   const [score, setScore] = useState(0)
   const [completed, setCompleted] = useState(false)
+  const [shuffledExercises, setShuffledExercises] = useState(exercises)
 
-  const exercise = exercises[currentExercise]
-  const progress = ((currentExercise + 1) / exercises.length) * 100
+  useEffect(() => {
+    const shuffled = [...exercises].sort(() => Math.random() - 0.5)
+    setShuffledExercises(shuffled)
+  }, [])
+
+  const exercise = shuffledExercises[currentExercise]
+  const progress = ((currentExercise + 1) / shuffledExercises.length) * 100
 
   const checkAnswer = () => {
     if (!selectedAnswer) return
@@ -45,7 +72,7 @@ export default function ReadingBasicsPage() {
   }
 
   const nextExercise = () => {
-    if (currentExercise < exercises.length - 1) {
+    if (currentExercise < shuffledExercises.length - 1) {
       setCurrentExercise(currentExercise + 1)
       setSelectedAnswer(null)
       setShowResult(false)
@@ -64,10 +91,10 @@ export default function ReadingBasicsPage() {
             </CardHeader>
             <CardContent className="text-center space-y-4">
               <div className="text-6xl font-bold text-amber-600">
-                {score}/{exercises.length}
+                {score}/{shuffledExercises.length}
               </div>
               <p className="text-xl">
-                คะแนนของคุณ: {Math.round((score / exercises.length) * 100)}%
+                คะแนนของคุณ: {Math.round((score / shuffledExercises.length) * 100)}%
               </p>
               <div className="space-x-4">
                 <Button onClick={() => window.location.reload()}>
@@ -95,7 +122,7 @@ export default function ReadingBasicsPage() {
         <div className="space-y-2">
           <div className="flex justify-between text-sm text-gray-600">
             <span>Progress</span>
-            <span>{currentExercise + 1} / {exercises.length}</span>
+            <span>{currentExercise + 1} / {shuffledExercises.length}</span>
           </div>
           <Progress value={progress} />
         </div>
@@ -154,7 +181,7 @@ export default function ReadingBasicsPage() {
                   </div>
                 )}
                 <Button onClick={nextExercise} className="w-full">
-                  {currentExercise < exercises.length - 1 ? "ข้อถัดไป" : "เสร็จสิ้น"}
+                  {currentExercise < shuffledExercises.length - 1 ? "ข้อถัดไป" : "เสร็จสิ้น"}
                 </Button>
               </div>
             ) : (

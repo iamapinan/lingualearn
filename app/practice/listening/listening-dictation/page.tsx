@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { PageContainer } from "@/components/page-container"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -24,6 +24,31 @@ const exercises = [
     text: "She enjoys reading books",
     hint: "4 words",
   },
+  {
+    id: 4,
+    text: "I study English every day",
+    hint: "5 words",
+  },
+  {
+    id: 5,
+    text: "It is a beautiful day",
+    hint: "5 words",
+  },
+  {
+    id: 6,
+    text: "They went to the store",
+    hint: "5 words",
+  },
+  {
+    id: 7,
+    text: "My favorite color is blue",
+    hint: "5 words",
+  },
+  {
+    id: 8,
+    text: "The cat sat on the mat",
+    hint: "6 words",
+  },
 ]
 
 export default function ListeningDictationPage() {
@@ -32,9 +57,15 @@ export default function ListeningDictationPage() {
   const [showResult, setShowResult] = useState(false)
   const [score, setScore] = useState(0)
   const [completed, setCompleted] = useState(false)
+  const [shuffledExercises, setShuffledExercises] = useState(exercises)
 
-  const exercise = exercises[currentExercise]
-  const progress = ((currentExercise + 1) / exercises.length) * 100
+  useEffect(() => {
+    const shuffled = [...exercises].sort(() => Math.random() - 0.5)
+    setShuffledExercises(shuffled)
+  }, [])
+
+  const exercise = shuffledExercises[currentExercise]
+  const progress = ((currentExercise + 1) / shuffledExercises.length) * 100
 
   const playAudio = () => {
     const utterance = new SpeechSynthesisUtterance(exercise.text)
@@ -52,7 +83,7 @@ export default function ListeningDictationPage() {
   }
 
   const nextExercise = () => {
-    if (currentExercise < exercises.length - 1) {
+    if (currentExercise < shuffledExercises.length - 1) {
       setCurrentExercise(currentExercise + 1)
       setUserInput("")
       setShowResult(false)
@@ -71,10 +102,10 @@ export default function ListeningDictationPage() {
             </CardHeader>
             <CardContent className="text-center space-y-4">
               <div className="text-6xl font-bold text-indigo-600">
-                {score}/{exercises.length}
+                {score}/{shuffledExercises.length}
               </div>
               <p className="text-xl">
-                คะแนนของคุณ: {Math.round((score / exercises.length) * 100)}%
+                คะแนนของคุณ: {Math.round((score / shuffledExercises.length) * 100)}%
               </p>
               <div className="space-x-4">
                 <Button onClick={() => window.location.reload()}>
@@ -102,7 +133,7 @@ export default function ListeningDictationPage() {
         <div className="space-y-2">
           <div className="flex justify-between text-sm text-gray-600">
             <span>Progress</span>
-            <span>{currentExercise + 1} / {exercises.length}</span>
+            <span>{currentExercise + 1} / {shuffledExercises.length}</span>
           </div>
           <Progress value={progress} />
         </div>
@@ -177,7 +208,7 @@ export default function ListeningDictationPage() {
                 )}
 
                 <Button onClick={nextExercise} className="w-full">
-                  {currentExercise < exercises.length - 1 ? "ข้อถัดไป" : "เสร็จสิ้น"}
+                  {currentExercise < shuffledExercises.length - 1 ? "ข้อถัดไป" : "เสร็จสิ้น"}
                 </Button>
               </div>
             )}

@@ -1,106 +1,75 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { PageContainer } from "@/components/page-container"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { Volume2, Check, X } from "lucide-react"
+import { Volume2, Check, X, Gauge } from "lucide-react"
 
-const exercises = [
+const speedExercises = [
   {
     id: 1,
-    audio: "hello",
-    text: "Hello",
-    options: ["Hello", "Help", "Hill", "Hall"],
-    correct: "Hello",
+    speed: "Normal Speed (70 WPM)",
+    rate: 0.7,
+    text: "The weather is beautiful today. I think we should go to the park. We can bring a picnic lunch. It will be fun to spend time outside.",
+    question: "What should they do?",
+    options: ["Stay home", "Go to the park", "Go shopping", "Visit friends"],
+    correct: "Go to the park",
   },
   {
     id: 2,
-    audio: "thank-you",
-    text: "Thank you",
-    options: ["Thank you", "Think you", "Tank you", "Thanks"],
-    correct: "Thank you",
+    speed: "Fast Speed (85 WPM)",
+    rate: 0.85,
+    text: "I need to buy groceries for dinner tonight. I'll stop at the supermarket on my way home. We need milk, bread, and some vegetables for the soup.",
+    question: "Where will they buy groceries?",
+    options: ["At a restaurant", "At the supermarket", "At a friend's house", "Online"],
+    correct: "At the supermarket",
   },
   {
     id: 3,
-    audio: "good-morning",
-    text: "Good morning",
-    options: ["Good morning", "Good evening", "Good night", "Good afternoon"],
-    correct: "Good morning",
+    speed: "Very Fast (100 WPM)",
+    rate: 1.0,
+    text: "The meeting has been moved to three o'clock instead of two. Please make sure everyone knows about this change. We don't want anyone to be late.",
+    question: "What time is the meeting now?",
+    options: ["Two o'clock", "Three o'clock", "Four o'clock", "Five o'clock"],
+    correct: "Three o'clock",
   },
   {
     id: 4,
-    audio: "how-are-you",
-    text: "How are you?",
-    options: ["How are you?", "Who are you?", "Where are you?", "What are you?"],
-    correct: "How are you?",
-  },
-  {
-    id: 5,
-    audio: "nice-to-meet-you",
-    text: "Nice to meet you",
-    options: ["Nice to meet you", "Nice to see you", "Glad to meet you", "Happy to meet you"],
-    correct: "Nice to meet you",
-  },
-  {
-    id: 6,
-    audio: "goodbye",
-    text: "Goodbye",
-    options: ["Goodbye", "Good day", "Good luck", "Good job"],
-    correct: "Goodbye",
-  },
-  {
-    id: 7,
-    audio: "please",
-    text: "Please",
-    options: ["Please", "Peace", "Price", "Place"],
-    correct: "Please",
-  },
-  {
-    id: 8,
-    audio: "sorry",
-    text: "Sorry",
-    options: ["Sorry", "Starry", "Story", "Stare"],
-    correct: "Sorry",
-  },
-  {
-    id: 9,
-    audio: "excuse-me",
-    text: "Excuse me",
-    options: ["Excuse me", "Excuse him", "Excuse her", "Excuse us"],
-    correct: "Excuse me",
-  },
-  {
-    id: 10,
-    audio: "you-are-welcome",
-    text: "You are welcome",
-    options: ["You are welcome", "You are coming", "You are going", "You are leaving"],
-    correct: "You are welcome",
+    speed: "Ultra Fast (120 WPM)",
+    rate: 1.2,
+    text: "I finished reading that book you recommended. It was really interesting. The story had many surprising twists. I couldn't put it down until the end.",
+    question: "What did they think of the book?",
+    options: ["Boring", "Interesting", "Confusing", "Too long"],
+    correct: "Interesting",
   },
 ]
 
-export default function ListeningBasicsPage() {
+export default function ListeningSpeedPage() {
   const [currentExercise, setCurrentExercise] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
   const [showResult, setShowResult] = useState(false)
   const [score, setScore] = useState(0)
   const [completed, setCompleted] = useState(false)
-  const [shuffledExercises, setShuffledExercises] = useState(exercises)
+  const [isPlaying, setIsPlaying] = useState(false)
 
-  useEffect(() => {
-    const shuffled = [...exercises].sort(() => Math.random() - 0.5)
-    setShuffledExercises(shuffled)
-  }, [])
+  const exercise = speedExercises[currentExercise]
+  const progress = ((currentExercise + 1) / speedExercises.length) * 100
 
-  const exercise = shuffledExercises[currentExercise]
-  const progress = ((currentExercise + 1) / shuffledExercises.length) * 100
-
-  const playAudio = () => {
+  const playAudio = async () => {
+    setIsPlaying(true)
+    
     const utterance = new SpeechSynthesisUtterance(exercise.text)
     utterance.lang = "en-US"
-    utterance.rate = 0.8
-    window.speechSynthesis.speak(utterance)
+    utterance.rate = exercise.rate
+    
+    await new Promise((resolve) => {
+      utterance.onend = resolve
+      window.speechSynthesis.speak(utterance)
+    })
+    
+    setIsPlaying(false)
   }
 
   const checkAnswer = () => {
@@ -114,13 +83,21 @@ export default function ListeningBasicsPage() {
   }
 
   const nextExercise = () => {
-    if (currentExercise < shuffledExercises.length - 1) {
+    if (currentExercise < speedExercises.length - 1) {
       setCurrentExercise(currentExercise + 1)
       setSelectedAnswer(null)
       setShowResult(false)
     } else {
       setCompleted(true)
     }
+  }
+
+  const getSpeedColor = (speed: string) => {
+    if (speed.includes("Normal")) return "bg-green-100 text-green-800"
+    if (speed.includes("Fast")) return "bg-yellow-100 text-yellow-800"
+    if (speed.includes("Very Fast")) return "bg-orange-100 text-orange-800"
+    if (speed.includes("Ultra")) return "bg-red-100 text-red-800"
+    return "bg-gray-100 text-gray-800"
   }
 
   if (completed) {
@@ -133,10 +110,10 @@ export default function ListeningBasicsPage() {
             </CardHeader>
             <CardContent className="text-center space-y-4">
               <div className="text-6xl font-bold text-indigo-600">
-                {score}/{shuffledExercises.length}
+                {score}/{speedExercises.length}
               </div>
               <p className="text-xl">
-                คะแนนของคุณ: {Math.round((score / shuffledExercises.length) * 100)}%
+                คะแนนของคุณ: {Math.round((score / speedExercises.length) * 100)}%
               </p>
               <div className="space-x-4">
                 <Button onClick={() => window.location.reload()}>
@@ -157,27 +134,31 @@ export default function ListeningBasicsPage() {
     <PageContainer>
       <div className="max-w-2xl mx-auto space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Basic Listening Comprehension</h1>
-          <p className="text-gray-600 mt-1">ฟังและเลือกคำที่ถูกต้อง</p>
+          <h1 className="text-3xl font-bold">Speed Listening</h1>
+          <p className="text-gray-600 mt-1">ฝึกฟังภาษาอังกฤษในความเร็วต่างๆ</p>
         </div>
 
         <div className="space-y-2">
           <div className="flex justify-between text-sm text-gray-600">
             <span>Progress</span>
-            <span>{currentExercise + 1} / {shuffledExercises.length}</span>
+            <span>{currentExercise + 1} / {speedExercises.length}</span>
           </div>
           <Progress value={progress} />
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Exercise {currentExercise + 1}</CardTitle>
+            <div className="flex items-center gap-3">
+              <Gauge className="h-6 w-6 text-indigo-600" />
+              <CardTitle>{exercise.speed}</CardTitle>
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex justify-center">
               <Button
                 size="lg"
                 onClick={playAudio}
+                disabled={isPlaying}
                 className="bg-indigo-500 hover:bg-indigo-600 h-32 w-32 rounded-full"
               >
                 <Volume2 className="h-12 w-12" />
@@ -185,10 +166,15 @@ export default function ListeningBasicsPage() {
             </div>
 
             <div className="text-center text-gray-600">
-              <p>คลิกปุ่มเพื่อฟังเสียง</p>
+              <p>{isPlaying ? "กำลังเล่นเสียงเร็ว..." : "คลิกปุ่มเพื่อฟังเสียง"}</p>
+              <p className="text-xs text-gray-500 mt-1">
+                ความท้าทายจะเพิ่มขึ้นในแต่ละข้อ
+              </p>
             </div>
 
             <div className="space-y-3">
+              <p className="font-semibold">{exercise.question}</p>
+              
               {exercise.options.map((option) => (
                 <button
                   key={option}
@@ -231,7 +217,7 @@ export default function ListeningBasicsPage() {
                   </div>
                 )}
                 <Button onClick={nextExercise} className="w-full">
-                  {currentExercise < shuffledExercises.length - 1 ? "ข้อถัดไป" : "เสร็จสิ้น"}
+                  {currentExercise < speedExercises.length - 1 ? "ข้อถัดไป" : "เสร็จสิ้น"}
                 </Button>
               </div>
             ) : (
@@ -246,6 +232,21 @@ export default function ListeningBasicsPage() {
 
             <div className="text-center text-sm text-gray-500">
               คะแนน: {score} / {currentExercise + (showResult ? 1 : 0)}
+            </div>
+
+            <div className="flex justify-center gap-2 mt-4">
+              {speedExercises.map((ex, idx) => (
+                <div
+                  key={idx}
+                  className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    idx === currentExercise
+                      ? getSpeedColor(ex.speed) + " ring-2 ring-indigo-500"
+                      : "bg-gray-100 text-gray-500"
+                  }`}
+                >
+                  {idx + 1}
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>

@@ -190,6 +190,23 @@ export default function PracticePage() {
                 </CardContent>
               </Card>
             </Link>
+
+            <Link href="/practice/listening/listening-stories" className="block">
+              <Card className="h-full border-indigo-100 hover:border-indigo-300 hover:shadow-md transition-all">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg font-bold text-indigo-700">Audio Stories</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Listen to short stories and answer comprehension questions.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded">Advanced</span>
+                    <span className="bg-indigo-50 text-indigo-700 text-xs px-2 py-1 rounded">3 stories</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           </div>
         </TabsContent>
 

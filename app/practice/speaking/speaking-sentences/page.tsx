@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { PageContainer } from "@/components/page-container"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -23,6 +23,16 @@ const exercises = [
     sentence: "Can you help me please?",
     translation: "ช่วยฉันหน่อยได้ไหม?",
   },
+  {
+    id: 4,
+    sentence: "I don't understand",
+    translation: "ฉันไม่เข้าใจ",
+  },
+  {
+    id: 5,
+    sentence: "Could you repeat that?",
+    translation: "คุณช่วยพูดอีกครั้งได้ไหม?",
+  },
 ]
 
 export default function SpeakingSentencesPage() {
@@ -31,9 +41,15 @@ export default function SpeakingSentencesPage() {
   const [hasRecorded, setHasRecorded] = useState(false)
   const [score, setScore] = useState(0)
   const [completed, setCompleted] = useState(false)
+  const [shuffledExercises, setShuffledExercises] = useState(exercises)
 
-  const exercise = exercises[currentExercise]
-  const progress = ((currentExercise + 1) / exercises.length) * 100
+  useEffect(() => {
+    const shuffled = [...exercises].sort(() => Math.random() - 0.5)
+    setShuffledExercises(shuffled)
+  }, [])
+
+  const exercise = shuffledExercises[currentExercise]
+  const progress = ((currentExercise + 1) / shuffledExercises.length) * 100
 
   const playExample = () => {
     const utterance = new SpeechSynthesisUtterance(exercise.sentence)
@@ -53,7 +69,7 @@ export default function SpeakingSentencesPage() {
   }
 
   const nextExercise = () => {
-    if (currentExercise < exercises.length - 1) {
+    if (currentExercise < shuffledExercises.length - 1) {
       setCurrentExercise(currentExercise + 1)
       setHasRecorded(false)
     } else {
@@ -71,7 +87,7 @@ export default function SpeakingSentencesPage() {
             </CardHeader>
             <CardContent className="text-center space-y-4">
               <div className="text-6xl font-bold text-green-600">
-                {score}/{exercises.length}
+                {score}/{shuffledExercises.length}
               </div>
               <p className="text-xl">
                 คุณฝึกพูดประโยคครบทั้งหมดแล้ว!
@@ -102,7 +118,7 @@ export default function SpeakingSentencesPage() {
         <div className="space-y-2">
           <div className="flex justify-between text-sm text-gray-600">
             <span>Progress</span>
-            <span>{currentExercise + 1} / {exercises.length}</span>
+            <span>{currentExercise + 1} / {shuffledExercises.length}</span>
           </div>
           <Progress value={progress} />
         </div>
@@ -153,7 +169,7 @@ export default function SpeakingSentencesPage() {
                       <p className="text-green-700 font-semibold">เยี่ยมมาก! คุณพูดได้คล่องแล้ว</p>
                     </div>
                     <Button onClick={nextExercise} className="w-full">
-                      {currentExercise < exercises.length - 1 ? "ข้อถัดไป" : "เสร็จสิ้น"}
+                      {currentExercise < shuffledExercises.length - 1 ? "ข้อถัดไป" : "เสร็จสิ้น"}
                     </Button>
                   </div>
                 )}
@@ -167,7 +183,7 @@ export default function SpeakingSentencesPage() {
             </div>
 
             <div className="text-center text-sm text-gray-500">
-              ประโยคที่ฝึกแล้ว: {score} / {exercises.length}
+              ประโยคที่ฝึกแล้ว: {score} / {shuffledExercises.length}
             </div>
           </CardContent>
         </Card>

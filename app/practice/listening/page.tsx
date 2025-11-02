@@ -14,7 +14,7 @@ export default function ListeningPracticePage() {
         <ExerciseCard
           title="Basic Comprehension"
           description="Listen to simple words and phrases and select the correct option."
-          href="/practice/listening/basic"
+          href="/practice/listening/listening-basics"
           difficulty="beginner"
           exerciseCount={10}
           tags={["Vocabulary", "Recognition"]}
@@ -23,7 +23,7 @@ export default function ListeningPracticePage() {
         <ExerciseCard
           title="Dictation Practice"
           description="Listen to audio and type what you hear to improve your spelling and listening skills."
-          href="/practice/listening/dictation"
+          href="/practice/listening/listening-dictation"
           difficulty="intermediate"
           exerciseCount={8}
           tags={["Spelling", "Comprehension"]}
@@ -32,7 +32,7 @@ export default function ListeningPracticePage() {
         <ExerciseCard
           title="Conversation Practice"
           description="Listen to dialogues and answer questions about the conversation."
-          href="/practice/listening/conversation"
+          href="/practice/listening/listening-conversations"
           difficulty="intermediate"
           exerciseCount={6}
           tags={["Dialogue", "Comprehension"]}
@@ -41,7 +41,7 @@ export default function ListeningPracticePage() {
         <ExerciseCard
           title="Audio Stories"
           description="Listen to short stories and answer comprehension questions."
-          href="/practice/listening/stories"
+          href="/practice/listening/listening-stories"
           difficulty="advanced"
           exerciseCount={5}
           tags={["Narrative", "Comprehension"]}
@@ -50,7 +50,7 @@ export default function ListeningPracticePage() {
         <ExerciseCard
           title="Accent Training"
           description="Practice listening to different English accents from around the world."
-          href="/practice/listening/accents"
+          href="/practice/listening/listening-accents"
           difficulty="advanced"
           exerciseCount={7}
           tags={["Accents", "Global English"]}
@@ -59,7 +59,7 @@ export default function ListeningPracticePage() {
         <ExerciseCard
           title="Speed Listening"
           description="Challenge yourself with faster speech to improve your listening skills."
-          href="/practice/listening/speed"
+          href="/practice/listening/listening-speed"
           difficulty="advanced"
           exerciseCount={4}
           tags={["Advanced", "Speed"]}
