@@ -14,6 +14,8 @@ CREATE TABLE users (
     name VARCHAR(100) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
+    role ENUM('user', 'admin') DEFAULT 'user',
+    avatar VARCHAR(255) NULL,
     total_xp INT NOT NULL DEFAULT 0,
     lessons_completed INT NOT NULL DEFAULT 0,
     level INT NOT NULL DEFAULT 1,

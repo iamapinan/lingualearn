@@ -162,7 +162,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         prevUser.level !== updatedUser.level ||
         prevUser.totalPoints !== updatedUser.totalPoints ||
         prevUser.lessonsCompleted !== updatedUser.lessonsCompleted ||
-        prevUser.name !== updatedUser.name
+        prevUser.name !== updatedUser.name ||
+        prevUser.avatar !== updatedUser.avatar
       
       if (hasChanges) {
         localStorage.setItem("lingualearn_user", JSON.stringify(updatedUser))

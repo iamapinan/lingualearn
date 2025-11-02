@@ -7,10 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
-import { Trophy, Star, BookOpen, Calendar, Clock, Award, Flame, Target, TrendingUp, KeyRound, User } from "lucide-react"
+import { Trophy, Star, BookOpen, Calendar, Clock, Award, Flame, Target, TrendingUp, KeyRound, User, ImageIcon } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
 import { ChangePasswordDialog } from "@/components/auth/change-password-dialog"
 import { EditNameDialog } from "@/components/auth/edit-name-dialog"
+import { SelectAvatarDialog } from "@/components/auth/select-avatar-dialog"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import {
   getUserStats,
@@ -30,6 +31,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [changePasswordDialogOpen, setChangePasswordDialogOpen] = useState(false)
   const [editNameDialogOpen, setEditNameDialogOpen] = useState(false)
+  const [selectAvatarDialogOpen, setSelectAvatarDialogOpen] = useState(false)
 
   useEffect(() => {
     const loadProfileData = async () => {
@@ -152,6 +154,33 @@ export default function ProfilePage() {
     alert("อัปเดตชื่อสำเร็จ")
   }
 
+  const handleSelectAvatar = async (avatar: string) => {
+    if (!token) {
+      throw new Error("ไม่พบ token การยืนยันตัวตน")
+    }
+
+    const response = await fetch("/api/users/me", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ avatar }),
+    })
+
+    if (!response.ok) {
+      const data = await response.json()
+      throw new Error(data.error || "ไม่สามารถอัปเดตรูปโปรไฟล์ได้")
+    }
+
+    const data = await response.json()
+    
+    // อัปเดต user ใน context
+    updateUser(data.user)
+
+    alert("อัปเดตรูปโปรไฟล์สำเร็จ")
+  }
+
   return (
     <div className="container max-w-6xl mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row gap-6 mb-8">
@@ -195,6 +224,15 @@ export default function ProfilePage() {
                   >
                     <KeyRound className="h-4 w-4 mr-2" />
                     เปลี่ยนรหัสผ่าน
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-fit"
+                    onClick={() => setSelectAvatarDialogOpen(true)}
+                  >
+                    <ImageIcon className="h-4 w-4 mr-2" />
+                    เลือกรูปโปรไฟล์
                   </Button>
                 </div>
               </div>
@@ -463,6 +501,11 @@ export default function ProfilePage() {
         open={changePasswordDialogOpen}
         onClose={() => setChangePasswordDialogOpen(false)}
         onChangePassword={handleChangePassword}
+      />
+      <SelectAvatarDialog
+        open={selectAvatarDialogOpen}
+        onClose={() => setSelectAvatarDialogOpen(false)}
+        onSelectAvatar={handleSelectAvatar}
       />
     </div>
   )

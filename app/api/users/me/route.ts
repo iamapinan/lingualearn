@@ -25,42 +25,63 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name } = body
-
-    if (!name || name.trim().length === 0) {
-      return NextResponse.json(
-        { error: "กรุณาระบุชื่อ" },
-        { status: 400 }
-      )
-    }
-
-    if (name.trim().length < 2) {
-      return NextResponse.json(
-        { error: "ชื่อต้องมีอย่างน้อย 2 ตัวอักษร" },
-        { status: 400 }
-      )
-    }
+    const { name, avatar } = body
 
     const db = await getDb()
     
-    // ตรวจสอบว่ามีชื่อซ้ำหรือไม่ (ยกเว้นผู้ใช้คนเดียวกัน)
-    const existingUser = await db
-      .select()
-      .from(users)
-      .where(eq(users.name, name.trim()))
-      .limit(1)
+    // กำหนดค่าที่จะอัปเดต
+    const updateData: any = {}
+    
+    // อัปเดตชื่อถ้ามีการส่งมา
+    if (name !== undefined) {
+      if (!name || name.trim().length === 0) {
+        return NextResponse.json(
+          { error: "กรุณาระบุชื่อ" },
+          { status: 400 }
+        )
+      }
 
-    if (existingUser.length > 0 && existingUser[0].id !== payload.userId) {
+      if (name.trim().length < 2) {
+        return NextResponse.json(
+          { error: "ชื่อต้องมีอย่างน้อย 2 ตัวอักษร" },
+          { status: 400 }
+        )
+      }
+
+      // ตรวจสอบว่ามีชื่อซ้ำหรือไม่ (ยกเว้นผู้ใช้คนเดียวกัน)
+      const existingUser = await db
+        .select()
+        .from(users)
+        .where(eq(users.name, name.trim()))
+        .limit(1)
+
+      if (existingUser.length > 0 && existingUser[0].id !== payload.userId) {
+        return NextResponse.json(
+          { error: "ชื่อนี้ถูกใช้งานแล้ว" },
+          { status: 409 }
+        )
+      }
+
+      updateData.name = name.trim()
+    }
+    
+    // อัปเดต avatar ถ้ามีการส่งมา
+    if (avatar !== undefined) {
+      updateData.avatar = avatar
+    }
+
+    // ถ้าไม่มีข้อมูลที่จะอัปเดต
+    if (Object.keys(updateData).length === 0) {
       return NextResponse.json(
-        { error: "ชื่อนี้ถูกใช้งานแล้ว" },
-        { status: 409 }
+        { error: "ไม่มีข้อมูลที่จะอัปเดต" },
+        { status: 400 }
       )
     }
 
-    // อัปเดตชื่อผู้ใช้
+    // อัปเดตข้อมูลผู้ใช้
     await db
       .update(users)
-      .set({ name: name.trim() })
+      .set(updateData)
       .where(eq(users.id, payload.userId))
 
     // ดึงข้อมูลผู้ใช้ที่อัปเดตแล้ว
@@ -84,6 +105,7 @@ export async function PATCH(request: NextRequest) {
         name: updatedUser.name,
         email: updatedUser.email,
         role: updatedUser.role,
+        avatar: updatedUser.avatar,
         totalXp: updatedUser.totalXp,
         lessonsCompleted: updatedUser.lessonsCompleted,
         level: updatedUser.level,
