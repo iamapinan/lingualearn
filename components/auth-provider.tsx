@@ -85,7 +85,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const parsedUser = JSON.parse(storedUser)
           setUser((prevUser) => {
             // Only update if data actually changed
-            if (!prevUser || prevUser.totalXp !== parsedUser.totalXp || prevUser.level !== parsedUser.level || prevUser.totalPoints !== parsedUser.totalPoints) {
+            if (!prevUser || 
+                prevUser.totalXp !== parsedUser.totalXp || 
+                prevUser.level !== parsedUser.level || 
+                prevUser.totalPoints !== parsedUser.totalPoints ||
+                prevUser.streak !== parsedUser.streak) {
               return parsedUser
             }
             return prevUser
@@ -106,7 +110,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const parsedUser = JSON.parse(storedUser)
           setUser((prevUser) => {
             // Only update if data actually changed
-            if (!prevUser || prevUser.totalXp !== parsedUser.totalXp || prevUser.level !== parsedUser.level || prevUser.totalPoints !== parsedUser.totalPoints) {
+            if (!prevUser || 
+                prevUser.totalXp !== parsedUser.totalXp || 
+                prevUser.level !== parsedUser.level || 
+                prevUser.totalPoints !== parsedUser.totalPoints ||
+                prevUser.streak !== parsedUser.streak) {
               return parsedUser
             }
             return prevUser
@@ -139,8 +147,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const updateUser = (updatedUser: User) => {
-    setUser(updatedUser)
-    localStorage.setItem("lingualearn_user", JSON.stringify(updatedUser))
+    // ตรวจสอบว่าข้อมูลเปลี่ยนจริงๆ ก่อนอัปเดตเพื่อหลีกเลี่ยง infinite loop
+    setUser((prevUser) => {
+      if (!prevUser) {
+        localStorage.setItem("lingualearn_user", JSON.stringify(updatedUser))
+        return updatedUser
+      }
+      
+      // เช็คว่ามีการเปลี่ยนแปลงจริงๆ หรือไม่
+      const hasChanges = 
+        prevUser.streak !== updatedUser.streak ||
+        prevUser.totalXp !== updatedUser.totalXp ||
+        prevUser.level !== updatedUser.level ||
+        prevUser.totalPoints !== updatedUser.totalPoints ||
+        prevUser.lessonsCompleted !== updatedUser.lessonsCompleted ||
+        prevUser.name !== updatedUser.name
+      
+      if (hasChanges) {
+        localStorage.setItem("lingualearn_user", JSON.stringify(updatedUser))
+        return updatedUser
+      }
+      
+      return prevUser
+    })
   }
 
   return (

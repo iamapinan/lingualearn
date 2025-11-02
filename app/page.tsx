@@ -30,7 +30,7 @@ import { GameCard } from "@/components/game-card"
 
 export default function HomePage() {
   const router = useRouter()
-  const { user, token } = useAuth()
+  const { user, token, updateUser } = useAuth()
   const [languages, setLanguages] = useState<any[]>([])
   const [selectedLanguage, setSelectedLanguage] = useState<number>(1)
   const [lessons, setLessons] = useState<any[]>([])
@@ -38,7 +38,6 @@ export default function HomePage() {
   const [challenges, setChallenges] = useState<any[]>([])
   const [missions, setMissions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-
   useEffect(() => {
     const loadHomeData = async () => {
       if (!user || !token) {
@@ -55,13 +54,33 @@ export default function HomePage() {
         }
 
         console.log("Fetching APIs...")
-        const [languagesRes, lessonsRes, completionsRes, challengesRes, missionsRes] = await Promise.all([
+        const [languagesRes, lessonsRes, completionsRes, challengesRes, missionsRes, userRes] = await Promise.all([
           fetch("/api/languages"),
           fetch(`/api/lessons?languageId=${selectedLanguage}`),
           fetch("/api/lesson-completions", { headers }),
           fetch("/api/challenges", { headers }),
           fetch("/api/missions", { headers }),
+          fetch("/api/auth/me", { headers }),
         ])
+
+        // อัปเดตข้อมูลผู้ใช้จาก API เพื่อให้ได้ข้อมูล streak ที่อัปเดตล่าสุด
+        // แต่เช็คว่าข้อมูลเปลี่ยนจริงๆ ก่อนเพื่อหลีกเลี่ยง infinite loop
+        if (userRes.ok) {
+          const userData = await userRes.json()
+          if (userData.success && userData.user) {
+            // ตรวจสอบว่าข้อมูลเปลี่ยนจริงๆ หรือไม่
+            const hasChanges = 
+              user.streak !== userData.user.streak ||
+              user.totalXp !== userData.user.totalXp ||
+              user.level !== userData.user.level ||
+              user.totalPoints !== userData.user.totalPoints ||
+              user.lessonsCompleted !== userData.user.lessonsCompleted
+            
+            if (hasChanges) {
+              updateUser(userData.user)
+            }
+          }
+        }
 
         console.log("API responses:", {
           languages: languagesRes.status,
@@ -120,7 +139,7 @@ export default function HomePage() {
     }
 
     loadHomeData()
-  }, [user, token, router, selectedLanguage])
+  }, [user?.id, token, router, selectedLanguage])
 
   if (loading || !user) {
     return (
