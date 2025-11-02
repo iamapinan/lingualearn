@@ -2907,12 +2907,36 @@ export async function saveGameResult(result: {
             user.games[result.gameType].history = user.games[result.gameType].history.slice(-20)
           }
 
+          // Calculate and award XP based on score
+          // Base XP: score / 10, minimum 5 XP for playing
+          const xpEarned = Math.max(5, Math.floor(result.score / 10))
+          const oldLevel = user.level || 1
+          
+          // Update user XP and total points
+          user.totalXp = (user.totalXp || 0) + xpEarned
+          user.totalPoints = (user.totalPoints || 0) + xpEarned
+
+          // Check if user should level up
+          if (user.totalPoints) {
+            // Use the existing calculateLevel function or import from scoring-system
+            const newLevel = calculateLevel(user.totalPoints)
+            if (newLevel > oldLevel) {
+              user.level = newLevel
+            }
+          }
+
           // Update user in database
           const putRequest = usersStore.put(user)
 
           putRequest.onsuccess = () => {
             // Update user in localStorage
             localStorage.setItem("lingualearn_user", JSON.stringify(user))
+            
+            // Dispatch custom event to notify other components about XP update
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(new Event("userUpdated"))
+            }
+            
             resolve()
           }
 

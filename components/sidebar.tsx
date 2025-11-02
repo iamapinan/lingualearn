@@ -32,6 +32,7 @@ import {
   BookMarked,
   LogOut,
   Shield,
+  BarChart3,
 } from "lucide-react"
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
@@ -122,6 +123,11 @@ export function Sidebar({ className, ...props }: SidebarProps) {
       title: "Badges",
       href: "/badges",
       icon: Trophy,
+    },
+    {
+      title: "Leaderboard",
+      href: "/leaderboard",
+      icon: BarChart3,
     },
     {
       title: "History",

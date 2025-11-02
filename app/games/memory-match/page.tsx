@@ -8,8 +8,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { useAuth } from "@/components/auth-provider"
 import {
   getUserVocabulary,
-  updateUserStats,
-  saveGameProgress,
+  saveGameResult,
   getGameProgress,
 } from "@/lib/database"
 import { playCorrectSound, playIncorrectSound, playLevelCompleteSound } from "@/lib/audio-utils"
@@ -294,21 +293,6 @@ export default function MemoryMatchPage() {
       const newScores = { ...storedScores, [gameId]: newGameData }
       localStorage.setItem(`lingualearn_game_scores_${user.id}`, JSON.stringify(newScores))
 
-      // Update user stats - add XP based on score
-      const xpEarned = Math.floor(finalScore / 10)
-      await updateUserStats({
-        totalXp: (user.totalXp || 0) + xpEarned,
-        totalPoints: (user.totalPoints || 0) + xpEarned,
-      })
-
-      // Update user in localStorage
-      const updatedUser = {
-        ...user,
-        totalXp: (user.totalXp || 0) + xpEarned,
-        totalPoints: (user.totalPoints || 0) + xpEarned,
-      }
-      localStorage.setItem("lingualearn_user", JSON.stringify(updatedUser))
-
       // Add to game history
       const historyItem = {
         date: new Date().toISOString(),
@@ -322,12 +306,18 @@ export default function MemoryMatchPage() {
       const newHistory = [...gameHistory, historyItem]
       setGameHistory(newHistory)
 
-      // Save to database
-      await saveGameProgress(user.id, "memory-match", finalScore, {
-        pairs: matchedPairs,
-        totalPairs: vocabulary.length,
-        moves: moves,
-        timeLeft: timeLeft,
+      // Save to database and award XP (saveGameResult handles XP automatically)
+      await saveGameResult({
+        userId: user.id,
+        gameType: "memory-match",
+        score: finalScore,
+        date: new Date().toISOString(),
+        details: {
+          pairs: matchedPairs,
+          totalPairs: vocabulary.length,
+          moves: moves,
+          timeLeft: timeLeft,
+        },
       })
     }
   }

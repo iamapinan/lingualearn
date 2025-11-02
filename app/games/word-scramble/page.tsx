@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/components/ui/use-toast"
 import { useAuth } from "@/components/auth-provider"
-import { getUserVocabulary, updateUserStats } from "@/lib/database"
+import { getUserVocabulary, saveGameResult } from "@/lib/database"
 import { playCorrectSound, playIncorrectSound, playLevelCompleteSound } from "@/lib/audio-utils"
 import { Clock, Star, Trophy, RefreshCw, Home } from "lucide-react"
 import { BackButton } from "@/components/back-button"
@@ -156,20 +156,18 @@ export default function WordScramblePage() {
       const newScores = { ...storedScores, [gameId]: newGameData }
       localStorage.setItem(`lingualearn_game_scores_${user.id}`, JSON.stringify(newScores))
 
-      // Update user stats - add XP based on score
-      const xpEarned = Math.floor(score / 10)
-      await updateUserStats({
-        totalXp: (user.totalXp || 0) + xpEarned,
-        totalPoints: (user.totalPoints || 0) + xpEarned,
+      // Save to database and award XP (saveGameResult handles XP automatically)
+      await saveGameResult({
+        userId: user.id,
+        gameType: "word-scramble",
+        score: score,
+        date: new Date().toISOString(),
+        details: {
+          correctWords: correctWords,
+          totalWords: totalWords,
+          accuracy: totalWords > 0 ? Math.round((correctWords / totalWords) * 100) : 0,
+        },
       })
-
-      // Update user in localStorage
-      const updatedUser = {
-        ...user,
-        totalXp: (user.totalXp || 0) + xpEarned,
-        totalPoints: (user.totalPoints || 0) + xpEarned,
-      }
-      localStorage.setItem("lingualearn_user", JSON.stringify(updatedUser))
     }
   }
 

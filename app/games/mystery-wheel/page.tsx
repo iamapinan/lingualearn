@@ -140,19 +140,22 @@ export default function MysteryWheelGame() {
     if (normalizedUserAnswer === normalizedCorrectAnswer) {
       setCorrectAnswers(correctAnswers + 1)
       const pointsEarned = 10
-      setScore(score + pointsEarned)
+      const newScore = score + pointsEarned
+      setScore(newScore)
       setGameStatus("correct")
 
-      if (user) {
+      // Award XP when reaching milestones (every 50 points)
+      if (user && newScore > 0 && newScore % 50 === 0) {
         await saveGameResult({
           userId: user.id,
           gameType: "mystery-wheel",
-          score: pointsEarned,
+          score: newScore,
           date: new Date().toISOString(),
           details: {
-            word: selectedItem.answer,
-            hint: selectedItem.hint,
-            category: selectedItem.category,
+            totalScore: newScore,
+            correctAnswers: correctAnswers + 1,
+            totalAttempts: totalAttempts + 1,
+            lastWord: selectedItem.answer,
           },
         })
       }

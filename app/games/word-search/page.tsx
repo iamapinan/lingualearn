@@ -73,8 +73,9 @@ export default function WordSearchGame() {
 
     // Try to place each word
     wordList.forEach((word) => {
-      const { english, thai } = word
-      const uppercaseWord = english.toUpperCase().replace(/\s/g, "")
+      const englishWord = word.word || ""
+      const thaiWord = word.translation || ""
+      const uppercaseWord = englishWord.toUpperCase().replace(/\s/g, "")
 
       if (uppercaseWord.length > size) return // Skip if word is too long
 
@@ -116,7 +117,7 @@ export default function WordSearchGame() {
             newGrid[r][c] = uppercaseWord[i]
           }
           placedWords.push(uppercaseWord)
-          translationMap[uppercaseWord] = thai
+          translationMap[uppercaseWord] = thaiWord
           break
         }
       }

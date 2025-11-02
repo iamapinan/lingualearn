@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getDb, schema } from "@/lib/db"
 import { eq, and } from "drizzle-orm"
+import { updateStreak } from "@/lib/streak-utils"
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,6 +41,9 @@ export async function POST(request: NextRequest) {
 
     // Update challenge progress for lesson
     await updateChallengeProgress(data.userId, "lesson", 1)
+
+    // อัปเดต streak เมื่อมีการทำกิจกรรม
+    await updateStreak(data.userId)
 
     return NextResponse.json(result[0], { status: 201 })
   } catch (error) {

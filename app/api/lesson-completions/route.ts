@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db/connection"
 import { lessonCompletions, users } from "@/lib/db/schema"
 import { verifyToken } from "@/lib/auth/jwt"
 import { eq, and } from "drizzle-orm"
+import { updateStreak, updatePerfectLessonStreak } from "@/lib/streak-utils"
 
 export async function GET(request: NextRequest) {
   try {
@@ -100,6 +101,14 @@ export async function POST(request: NextRequest) {
           })
           .where(eq(lessonCompletions.id, existingCompletion[0].id))
       }
+
+      // อัปเดต streak และ perfect lesson streak แม้จะเป็นบทเรียนเดิม
+      await updateStreak(userId)
+      if (score === 100) {
+        await updatePerfectLessonStreak(userId, true)
+      } else {
+        await updatePerfectLessonStreak(userId, false)
+      }
     } else {
       // Create new completion
       await db.insert(lessonCompletions).values({
@@ -141,6 +150,16 @@ export async function POST(request: NextRequest) {
               level: Math.max(user.level || 1, 1 + Math.floor(((user.totalPoints || 0) + (xpEarned || 0)) / 1000)),
             })
             .where(eq(users.id, userId))
+
+          // อัปเดต streak เมื่อเสร็จบทเรียน
+          await updateStreak(userId)
+        }
+
+        // อัปเดต perfect lesson streak ถ้าได้คะแนน 100%
+        if (score === 100) {
+          await updatePerfectLessonStreak(userId, true)
+        } else {
+          await updatePerfectLessonStreak(userId, false)
         }
       }
     }

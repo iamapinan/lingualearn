@@ -8,7 +8,6 @@ import { getRandomVocabulary } from "@/lib/db/data/vocabulary-data"
 import { saveGameResult } from "@/lib/database"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/components/auth-provider"
-import Image from "next/image"
 import { BackButton } from "@/components/back-button"
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")
@@ -129,16 +128,28 @@ export default function HangmanGame() {
     return word.split("").map((letter, index) => {
       if (letter === " ") {
         return (
-          <span key={index} className="mx-1">
+          <span key={index} className="mx-2 w-12">
             &nbsp;
           </span>
         )
       }
 
+      const isGuessed = guessedLetters.includes(letter)
+      const isRevealed = gameOver && !won
+
       return (
-        <span key={index} className="mx-1 text-2xl font-bold">
-          {guessedLetters.includes(letter) || (gameOver && !won) ? letter : "_"}
-        </span>
+        <div
+          key={index}
+          className="mx-1 w-14 h-20 flex flex-col items-center justify-center border-b-4 border-indigo-600 rounded-lg bg-gradient-to-b from-indigo-50 to-indigo-100 shadow-md"
+        >
+          {isGuessed || isRevealed ? (
+            <span className="text-4xl font-bold text-indigo-700 animate-bounce">
+              {letter}
+            </span>
+          ) : (
+            <span className="text-3xl font-bold text-indigo-300">_</span>
+          )}
+        </div>
       )
     })
   }
@@ -159,71 +170,123 @@ export default function HangmanGame() {
         </CardHeader>
         <CardContent className="p-6">
           <div className="flex flex-col items-center mb-6">
-            <div className="relative w-48 h-48 mb-4">
-              <Image
-                src={`/placeholder.svg?key=vz185&key=1vm6v&height=200&width=200&query=hangman stage ${wrongAttempts} of 6`}
-                alt={`Hangman stage ${wrongAttempts}`}
-                width={200}
-                height={200}
-                className="object-contain"
+            {/* Hangman Visual */}
+            <div className="relative mb-6 flex items-center justify-center">
+              <div className="text-center">
+                <div className="text-6xl font-bold mb-2">
+                  {wrongAttempts === 0 && "😊"}
+                  {wrongAttempts === 1 && "😐"}
+                  {wrongAttempts === 2 && "😟"}
+                  {wrongAttempts === 3 && "😰"}
+                  {wrongAttempts === 4 && "😨"}
+                  {wrongAttempts === 5 && "😱"}
+                  {wrongAttempts >= 6 && "💀"}
+                </div>
+                <div className="text-sm font-semibold text-red-600">
+                  {wrongAttempts}/{MAX_ATTEMPTS} Wrong Guesses
+                </div>
+              </div>
+            </div>
+
+            {/* Category and Hint */}
+            <div className="w-full max-w-2xl mb-6">
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-semibold text-indigo-600 uppercase tracking-wider">Category</span>
+                </div>
+                <p className="text-md">{category}</p>
+              </div>
+
+              <div className="bg-gradient-to-r from-yellow-100 to-amber-100 rounded-lg p-4 mb-4 border border-yellow-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">Hint / คำใบ้</span>
+                </div>
+                <p className="text-xl font-bold text-amber-800">{hint}</p>
+              </div>
+            </div>
+
+            {/* Word Display */}
+            <div className="w-full max-w-2xl mb-6">
+              <div className="bg-white rounded-xl p-6 border-2 border-indigo-200 shadow-lg">
+                <div className="text-center mb-2">
+                  <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Guess the Word</span>
+                </div>
+                <div className="flex flex-wrap justify-center gap-2">{displayWord()}</div>
+              </div>
+            </div>
+
+            {/* Timer and Progress */}
+            <div className="w-full max-w-2xl mb-6">
+              <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-600">Time Left</span>
+                  <span className="text-lg font-bold text-indigo-600">{formatTime(timeLeft)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-600">Attempts</span>
+                  <span className={`text-lg font-bold ${wrongAttempts >= MAX_ATTEMPTS - 1 ? "text-red-600" : "text-gray-600"}`}>
+                    {wrongAttempts}/{MAX_ATTEMPTS}
+                  </span>
+                </div>
+              </div>
+              <Progress
+                value={(timeLeft / 120) * 100}
+                className="w-full h-3"
               />
             </div>
 
-            <div className="text-center mb-4">
-              <p className="text-sm text-gray-500 mb-2">Category: {category}</p>
-              <p className="text-sm text-gray-500 mb-4">Hint: {hint}</p>
-              <div className="flex justify-center space-x-1 mb-4">{displayWord()}</div>
-            </div>
-
-            <div className="flex justify-between items-center w-full mb-4">
-              <div className="text-sm font-medium">
-                Wrong attempts: {wrongAttempts}/{MAX_ATTEMPTS}
-              </div>
-              <div className="text-sm font-medium">Time left: {formatTime(timeLeft)}</div>
-            </div>
-
-            <Progress value={(timeLeft / 120) * 100} className="w-full mb-6" />
-
             {gameOver ? (
-              <div className="text-center mb-6">
-                <h3 className={`text-xl font-bold ${won ? "text-green-600" : "text-red-600"} mb-2`}>
-                  {won ? "Congratulations!" : "Game Over!"}
-                </h3>
-                {won ? (
-                  <p className="mb-4">
-                    You guessed the word: <span className="font-bold">{word}</span>
+              <div className="text-center mb-6 w-full max-w-2xl">
+                <div className={`rounded-xl p-6 mb-4 ${won ? "bg-gradient-to-r from-green-100 to-emerald-100 border-2 border-green-300" : "bg-gradient-to-r from-red-100 to-pink-100 border-2 border-red-300"}`}>
+                  <h3 className={`text-3xl font-bold ${won ? "text-green-700" : "text-red-700"} mb-3`}>
+                    {won ? "🎉 Congratulations! 🎉" : "💀 Game Over! 💀"}
+                  </h3>
+                  <p className="text-lg font-semibold text-gray-700 mb-2">
+                    {won ? "คุณทายคำถูกต้อง!" : "คำที่ถูกต้องคือ"}
                   </p>
-                ) : (
-                  <p className="mb-4">
-                    The word was: <span className="font-bold">{word}</span>
-                  </p>
-                )}
-                {won && <p className="text-lg font-bold mb-4">Score: {score}</p>}
-                <Button onClick={startNewGame} className="bg-indigo-600 hover:bg-indigo-700">
-                  Play Again
+                  <p className="text-2xl font-bold text-indigo-800 mb-4">{word}</p>
+                  {won && (
+                    <div className="bg-white rounded-lg p-4 inline-block">
+                      <p className="text-sm text-gray-600 mb-1">Score</p>
+                      <p className="text-3xl font-bold text-indigo-600">{score}</p>
+                    </div>
+                  )}
+                </div>
+                <Button onClick={startNewGame} size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-lg px-8">
+                  เล่นอีกครั้ง
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-7 gap-2 w-full max-w-md">
-                {ALPHABET.map((letter) => (
-                  <Button
-                    key={letter}
-                    onClick={() => guessLetter(letter)}
-                    disabled={guessedLetters.includes(letter)}
-                    variant={
-                      guessedLetters.includes(letter) ? (word.includes(letter) ? "default" : "outline") : "default"
-                    }
-                    className={`${
-                      guessedLetters.includes(letter)
-                        ? word.includes(letter)
-                          ? "bg-green-500 hover:bg-green-600"
-                          : "bg-red-500 hover:bg-red-600"
-                        : "bg-indigo-600 hover:bg-indigo-700"
-                    } h-10 w-10 p-0`}
-                  >
-                    {letter}
-                  </Button>
-                ))}
+              <div className="w-full max-w-2xl">
+                <div className="text-center mb-4">
+                  <span className="text-sm font-semibold text-gray-600 uppercase tracking-wider">เลือกตัวอักษร</span>
+                </div>
+                <div className="grid grid-cols-7 gap-3 bg-gradient-to-br from-gray-50 to-indigo-50 rounded-xl p-4 border border-indigo-100">
+                  {ALPHABET.map((letter) => {
+                    const isGuessed = guessedLetters.includes(letter)
+                    const isCorrect = word.includes(letter)
+                    const isWrong = isGuessed && !isCorrect
+
+                    return (
+                      <Button
+                        key={letter}
+                        onClick={() => guessLetter(letter)}
+                        disabled={isGuessed}
+                        size="lg"
+                        variant={isGuessed ? (isCorrect ? "default" : "outline") : "default"}
+                        className={`${
+                          isGuessed
+                            ? isCorrect
+                              ? "bg-green-500 hover:bg-green-600 text-white border-2 border-green-600"
+                              : "bg-red-500 hover:bg-red-600 text-white border-2 border-red-600 opacity-60 cursor-not-allowed"
+                            : "bg-indigo-600 hover:bg-indigo-700 text-white border-2 border-indigo-700 hover:scale-105 transition-transform"
+                        } h-12 w-12 p-0 text-lg font-bold shadow-md`}
+                      >
+                        {letter}
+                      </Button>
+                    )
+                  })}
+                </div>
               </div>
             )}
           </div>

@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getDb, schema } from "@/lib/db"
 import { eq, and } from "drizzle-orm"
+import { updateStreak } from "@/lib/streak-utils"
 
 export async function POST(request: NextRequest) {
   try {
@@ -95,6 +96,9 @@ export async function POST(request: NextRequest) {
 
     // Update user
     await db.update(schema.users).set(updateData).where(eq(schema.users.id, userId))
+
+    // อัปเดต streak เมื่อทำ assessment
+    await updateStreak(userId)
 
     return NextResponse.json({ success: true, leveledUp })
   } catch (error) {

@@ -294,6 +294,7 @@ export default function HomePage() {
                 href="/games/word-scramble"
                 bestScore={120}
                 timesPlayed={5}
+                onClick={() => router.push("/games/word-scramble")}
               />
 
               <GameCard
@@ -305,6 +306,7 @@ export default function HomePage() {
                 href="/games/memory-match"
                 bestScore={85}
                 timesPlayed={3}
+                onClick={() => router.push("/games/memory-match")}
               />
 
               <GameCard
@@ -316,6 +318,7 @@ export default function HomePage() {
                 href="/games/speed-challenge"
                 bestScore={210}
                 timesPlayed={7}
+                onClick={() => router.push("/games/speed-challenge")}
               />
             </div>
           </div>
