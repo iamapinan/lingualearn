@@ -153,7 +153,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
           <Button
             variant="ghost"
             size="icon"
-            className={cn("fixed top-4 z-40 md:hidden", expanded ? "left-[240px]" : "left-[70px]")}
+            className="fixed top-4 left-4 z-40 md:hidden"
             aria-label="Open Menu"
           >
             <Menu className="h-5 w-5" />

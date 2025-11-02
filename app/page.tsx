@@ -139,7 +139,7 @@ export default function HomePage() {
   const selectedLanguageData = languages.find((lang) => lang.id === selectedLanguage)
 
   return (
-    <div className="w-full max-w-full mx-auto px-10 py-8 bg-gradient-to-b from-indigo-50 to-purple-50 min-h-screen">
+    <div className="w-full md:w-full py-8 bg-gradient-to-b from-indigo-50 to-purple-50 min-h-screen px-[2%] md:px-10">
       {/* Hero Section */}
       <div className="mb-8 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
         <div className="flex flex-col md:flex-row items-center gap-6">
