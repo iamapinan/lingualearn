@@ -12,7 +12,7 @@ type QuestionType = "pastSimple" | "pastParticiple" | "baseForm"
 
 interface VerbPracticeProps {
   verbs: Verb[]
-  onComplete: () => void
+  onComplete: (score: { correct: number; total: number }) => void
   mode: PracticeMode
 }
 
@@ -150,7 +150,7 @@ export function VerbPractice({ verbs, onComplete, mode }: VerbPracticeProps) {
       setUserAnswer("")
       setFeedback({ show: false, correct: false, message: "" })
     } else {
-      onComplete()
+      onComplete(score)
     }
   }
 

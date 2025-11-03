@@ -196,7 +196,7 @@ export default function ListeningStoriesPage() {
     setShowResult(true)
   }
 
-  const nextQuestion = () => {
+  const nextQuestion = async () => {
     stopStory()
     
     if (currentQuestion < story.questions.length - 1) {
@@ -213,6 +213,29 @@ export default function ListeningStoriesPage() {
         setHasPlayed(false)
       } else {
         setCompleted(true)
+        
+        // Award XP when completed
+        try {
+          const userStr = localStorage.getItem("lingualearn_user")
+          if (userStr) {
+            const user = JSON.parse(userStr)
+            const { updateUserStats } = await import("@/lib/database")
+            const xpEarned = score * 3
+            if (xpEarned > 0) {
+              await updateUserStats({
+                totalXp: (user.totalXp || 0) + xpEarned,
+                totalPoints: (user.totalPoints || 0) + xpEarned,
+              })
+              const updatedUser = { ...user, totalXp: (user.totalXp || 0) + xpEarned, totalPoints: (user.totalPoints || 0) + xpEarned }
+              localStorage.setItem("lingualearn_user", JSON.stringify(updatedUser))
+              if (typeof window !== "undefined") {
+                window.dispatchEvent(new Event("userUpdated"))
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error awarding XP:", error)
+        }
       }
     }
   }

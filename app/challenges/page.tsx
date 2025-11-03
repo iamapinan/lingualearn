@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { getDailyChallenges, completeChallenge } from "@/lib/database"
+import { useAuth } from "@/components/auth-provider"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -12,41 +12,64 @@ import Link from "next/link"
 
 export default function ChallengesPage() {
   const router = useRouter()
-  const [userId, setUserId] = useState<number | null>(null)
+  const { user, token } = useAuth()
   const [challenges, setChallenges] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Get user from localStorage
-    const userStr = localStorage.getItem("lingualearn_user")
-    if (userStr) {
-      const user = JSON.parse(userStr)
-      setUserId(user.id)
-
-      // Load challenges
-      const loadChallenges = async () => {
-        if (user.id) {
-          const userChallenges = await getDailyChallenges(user.id)
-          setChallenges(userChallenges)
-          setLoading(false)
-        }
+    const loadChallenges = async () => {
+      if (!user || !token) {
+        router.push("/auth")
+        return
       }
 
-      loadChallenges()
-    } else {
-      // Redirect to auth page if no user
-      router.push("/auth")
+      try {
+        const headers = {
+          Authorization: `Bearer ${token}`,
+        }
+
+        const response = await fetch("/api/challenges", { headers })
+        if (response.ok) {
+          const data = await response.json()
+          setChallenges(data.challenges || [])
+        }
+      } catch (error) {
+        console.error("Error loading challenges:", error)
+      } finally {
+        setLoading(false)
+      }
     }
-  }, [router])
+
+    loadChallenges()
+  }, [user, token, router])
 
   const handleClaimReward = async (challengeId: number) => {
-    if (!userId) return
+    if (!user || !token) return
 
-    const success = await completeChallenge(userId, challengeId)
-    if (success) {
-      // Refresh challenges
-      const userChallenges = await getDailyChallenges(userId)
-      setChallenges(userChallenges)
+    try {
+      const response = await fetch(`/api/challenges/${challengeId}/complete`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ userId: user.id }),
+      })
+
+      if (response.ok) {
+        // Refresh challenges
+        const challengesRes = await fetch("/api/challenges", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        if (challengesRes.ok) {
+          const data = await challengesRes.json()
+          setChallenges(data.challenges || [])
+        }
+      }
+    } catch (error) {
+      console.error("Error claiming challenge reward:", error)
     }
   }
 
@@ -169,7 +192,7 @@ export default function ChallengesPage() {
                     Completed
                   </Button>
                 ) : challenge.progress >= challenge.requirementCount ? (
-                  <Button className="w-full" onClick={() => handleClaimReward(challenge.id)}>
+                  <Button className="w-full bg-indigo-500 hover:bg-indigo-600" onClick={() => handleClaimReward(challenge.id)}>
                     Claim Reward
                   </Button>
                 ) : (

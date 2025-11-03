@@ -118,17 +118,27 @@ export default function HomePage() {
         if (challengesRes.ok) {
           const data = await challengesRes.json()
           console.log("Challenges loaded:", data.challenges?.length)
-          setChallenges(data.challenges || [])
+          if (data.success && data.challenges) {
+            setChallenges(data.challenges)
+          } else {
+            setChallenges([])
+          }
         } else {
           console.error("Challenges API failed:", await challengesRes.text())
+          setChallenges([])
         }
 
         if (missionsRes.ok) {
           const data = await missionsRes.json()
           console.log("Missions loaded:", data.missions?.length)
-          setMissions(data.missions || [])
+          if (data.success && data.missions) {
+            setMissions(data.missions)
+          } else {
+            setMissions([])
+          }
         } else {
           console.error("Missions API failed:", await missionsRes.text())
+          setMissions([])
         }
 
         console.log("Home data loading complete")

@@ -92,6 +92,37 @@ export default function VocabularyPage() {
       setShowTranslation(false)
     } else {
       setReviewComplete(true)
+      
+      // Award XP when review is complete
+      if (user) {
+        try {
+          const { updateUserStats } = await import("@/lib/database")
+          // Award XP based on correct answers: 4 XP per correct answer
+          const finalXp = reviewStats.correct * 4
+          
+          if (finalXp > 0) {
+            await updateUserStats({
+              totalXp: (user.totalXp || 0) + finalXp,
+              totalPoints: (user.totalPoints || 0) + finalXp,
+            })
+
+            // Update user in localStorage
+            const updatedUser = {
+              ...user,
+              totalXp: (user.totalXp || 0) + finalXp,
+              totalPoints: (user.totalPoints || 0) + finalXp,
+            }
+            localStorage.setItem("lingualearn_user", JSON.stringify(updatedUser))
+            
+            // Dispatch event to notify other components
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(new Event("userUpdated"))
+            }
+          }
+        } catch (error) {
+          console.error("Error awarding XP for vocabulary review:", error)
+        }
+      }
     }
   }
 

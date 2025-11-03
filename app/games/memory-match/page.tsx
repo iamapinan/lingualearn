@@ -40,6 +40,26 @@ interface MemoryCard {
   isMatched: boolean
 }
 
+// Default vocabulary for new users
+const defaultVocabulary: VocabularyItem[] = [
+  { id: 10001, word: "hello", translation: "สวัสดี" },
+  { id: 10002, word: "thank you", translation: "ขอบคุณ" },
+  { id: 10003, word: "please", translation: "กรุณา" },
+  { id: 10004, word: "water", translation: "น้ำ" },
+  { id: 10005, word: "apple", translation: "แอปเปิล" },
+  { id: 10006, word: "house", translation: "บ้าน" },
+  { id: 10007, word: "happy", translation: "มีความสุข" },
+  { id: 10008, word: "table", translation: "โต๊ะ" },
+  { id: 10009, word: "chair", translation: "เก้าอี้" },
+  { id: 10010, word: "book", translation: "หนังสือ" },
+  { id: 10011, word: "school", translation: "โรงเรียน" },
+  { id: 10012, word: "friend", translation: "เพื่อน" },
+  { id: 10013, word: "music", translation: "เพลง" },
+  { id: 10014, word: "color", translation: "สี" },
+  { id: 10015, word: "study", translation: "เรียน" },
+  { id: 10016, word: "travel", translation: "เดินทาง" },
+]
+
 export default function MemoryMatchPage() {
   const router = useRouter()
   const { user } = useAuth()
@@ -87,13 +107,19 @@ export default function MemoryMatchPage() {
             translation: item.translation,
           }))
 
+        // Use default vocabulary as fallback if user has no vocabulary
+        const finalVocab = filteredVocab.length > 0 ? filteredVocab : defaultVocabulary
+
         // Shuffle and take only 8 items for the game
-        const shuffledVocab = [...filteredVocab].sort(() => Math.random() - 0.5).slice(0, 8)
+        const shuffledVocab = [...finalVocab].sort(() => Math.random() - 0.5).slice(0, 8)
 
         setVocabulary(shuffledVocab)
         setLoading(false)
       } catch (error) {
         console.error("Error loading vocabulary:", error)
+        // Use default vocabulary on error
+        const shuffledVocab = [...defaultVocabulary].sort(() => Math.random() - 0.5).slice(0, 8)
+        setVocabulary(shuffledVocab)
         setLoading(false)
       }
     }

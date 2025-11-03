@@ -18,6 +18,30 @@ interface VocabularyItem {
   translation: string
 }
 
+// Default vocabulary for new users
+const defaultVocabulary: VocabularyItem[] = [
+  { id: 10001, word: "hello", translation: "สวัสดี" },
+  { id: 10002, word: "water", translation: "น้ำ" },
+  { id: 10003, word: "apple", translation: "แอปเปิล" },
+  { id: 10004, word: "house", translation: "บ้าน" },
+  { id: 10005, word: "happy", translation: "มีความสุข" },
+  { id: 10006, word: "table", translation: "โต๊ะ" },
+  { id: 10007, word: "chair", translation: "เก้าอี้" },
+  { id: 10008, word: "book", translation: "หนังสือ" },
+  { id: 10009, word: "music", translation: "เพลง" },
+  { id: 10010, word: "color", translation: "สี" },
+  { id: 10011, word: "study", translation: "เรียน" },
+  { id: 10012, word: "travel", translation: "เดินทาง" },
+  { id: 10013, word: "world", translation: "โลก" },
+  { id: 10014, word: "dream", translation: "ความฝัน" },
+  { id: 10015, word: "learn", translation: "เรียนรู้" },
+  { id: 10016, word: "teach", translation: "สอน" },
+  { id: 10017, word: "speak", translation: "พูด" },
+  { id: 10018, word: "write", translation: "เขียน" },
+  { id: 10019, word: "read", translation: "อ่าน" },
+  { id: 10020, word: "think", translation: "คิด" },
+]
+
 export default function WordScramblePage() {
   const router = useRouter()
   const { user } = useAuth()
@@ -56,13 +80,19 @@ export default function WordScramblePage() {
             translation: item.translation,
           }))
 
+        // Use default vocabulary as fallback if user has no vocabulary
+        const finalVocab = filteredVocab.length > 0 ? filteredVocab : defaultVocabulary
+
         // Shuffle the vocabulary
-        const shuffledVocab = [...filteredVocab].sort(() => Math.random() - 0.5)
+        const shuffledVocab = [...finalVocab].sort(() => Math.random() - 0.5)
 
         setVocabulary(shuffledVocab)
         setLoading(false)
       } catch (error) {
         console.error("Error loading vocabulary:", error)
+        // Use default vocabulary on error
+        const shuffledVocab = [...defaultVocabulary].sort(() => Math.random() - 0.5)
+        setVocabulary(shuffledVocab)
         setLoading(false)
       }
     }

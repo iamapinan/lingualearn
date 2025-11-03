@@ -71,7 +71,41 @@ export default function VerbPracticePage() {
     setStep("practice")
   }
 
-  const handleComplete = () => {
+  const handleComplete = async (score: { correct: number; total: number }) => {
+    // Award XP based on performance
+    try {
+      const userStr = localStorage.getItem("lingualearn_user")
+      if (userStr) {
+        const user = JSON.parse(userStr)
+        const { updateUserStats } = await import("@/lib/database")
+        
+        // Calculate XP: base 5 XP per correct answer
+        const xpEarned = score.correct * 5
+        
+        if (xpEarned > 0) {
+          await updateUserStats({
+            totalXp: (user.totalXp || 0) + xpEarned,
+            totalPoints: (user.totalPoints || 0) + xpEarned,
+          })
+
+          // Update user in localStorage
+          const updatedUser = {
+            ...user,
+            totalXp: (user.totalXp || 0) + xpEarned,
+            totalPoints: (user.totalPoints || 0) + xpEarned,
+          }
+          localStorage.setItem("lingualearn_user", JSON.stringify(updatedUser))
+          
+          // Dispatch event to notify other components
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new Event("userUpdated"))
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error awarding XP for verb practice:", error)
+    }
+    
     setStep("mode")
     router.push("/verbs")
   }

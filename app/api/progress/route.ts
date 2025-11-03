@@ -77,8 +77,8 @@ async function updateUserXP(userId: number, lessonId: number, xpEarned: number) 
   const totalXp = (userData.totalXp || 0) + xpEarned
   const totalPoints = (userData.totalPoints || 0) + xpEarned
 
-  // Calculate new level
-  const newLevel = 1 + Math.floor(totalPoints / 1000)
+  // Calculate new level (every 100 XP = 1 level)
+  const newLevel = 1 + Math.floor(totalPoints / 100)
 
   // Update user
   const updateData: any = {
@@ -212,19 +212,27 @@ async function updateChallengeProgress(userId: number, challengeType: string, am
       // Update existing progress
       const challengeData = userChallenge[0]
       if (!challengeData.completed) {
+        const newProgress = challengeData.progress + amount
+        const completed = newProgress >= challenge.requirementCount
+
         await db
           .update(schema.userChallenges)
-          .set({ progress: challengeData.progress + amount })
+          .set({
+            progress: newProgress,
+            completed,
+            completedAt: completed ? new Date().toISOString() : challengeData.completedAt,
+          })
           .where(eq(schema.userChallenges.id, challengeData.id))
       }
     } else {
       // Create new progress entry
+      const completed = amount >= challenge.requirementCount
       await db.insert(schema.userChallenges).values({
         userId,
         challengeId: challenge.id,
         progress: amount,
-        completed: false,
-        completedAt: null,
+        completed,
+        completedAt: completed ? new Date().toISOString() : null,
       })
     }
   }

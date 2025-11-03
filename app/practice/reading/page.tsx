@@ -10,6 +10,7 @@ import { useAuth } from "@/components/auth-provider"
 import { BackButton } from "@/components/back-button"
 import { playCorrectSound, playIncorrectSound } from "@/lib/audio-utils"
 import { BookOpen, ArrowRight, Check, X } from "lucide-react"
+import { updateUserStats } from "@/lib/database"
 
 // Sample reading exercises
 const readingExercises = [
@@ -102,7 +103,7 @@ export default function ReadingPracticePage() {
     }
   }
 
-  const handleNextExercise = () => {
+  const handleNextExercise = async () => {
     if (currentExerciseIndex < exercises.length - 1) {
       setCurrentExerciseIndex((prev) => prev + 1)
       setSelectedAnswer(null)
@@ -111,8 +112,26 @@ export default function ReadingPracticePage() {
     } else {
       setExerciseComplete(true)
 
-      // Update user stats if needed
-      // ...
+      // Calculate and award XP based on score
+      if (user) {
+        try {
+          const xpEarned = Math.floor(score / 2) // 1 XP per 2 points
+          await updateUserStats({
+            totalXp: (user.totalXp || 0) + xpEarned,
+            totalPoints: (user.totalPoints || 0) + xpEarned,
+          })
+
+          // Update user in localStorage
+          const updatedUser = {
+            ...user,
+            totalXp: (user.totalXp || 0) + xpEarned,
+            totalPoints: (user.totalPoints || 0) + xpEarned,
+          }
+          localStorage.setItem("lingualearn_user", JSON.stringify(updatedUser))
+        } catch (error) {
+          console.error("Error updating user stats:", error)
+        }
+      }
     }
   }
 

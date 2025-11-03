@@ -7,7 +7,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, Star, CheckCircle, Clock, Trophy, Calendar, Target, Flame } from "lucide-react"
-import { getMissions, claimMissionReward } from "@/lib/database"
 import { useAuth } from "@/components/auth-provider"
 
 interface Mission {
@@ -28,37 +27,59 @@ interface Mission {
 }
 
 export default function MissionsPage() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const [missions, setMissions] = useState<Mission[]>([])
   const [loading, setLoading] = useState(true)
   const [claimingMission, setClaimingMission] = useState<number | null>(null)
-  const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
     const loadMissions = async () => {
-      if (!user) return
+      if (!user || !token) return
 
       try {
-        const missionsData = await getMissions(user.id)
-        setMissions(missionsData as Mission[])
-        setLoading(false)
+        const headers = {
+          Authorization: `Bearer ${token}`,
+        }
+
+        const response = await fetch("/api/missions", { headers })
+        if (response.ok) {
+          const data = await response.json()
+          setMissions(data.missions || [])
+        }
       } catch (error) {
         console.error("Error loading missions:", error)
+      } finally {
         setLoading(false)
       }
     }
 
     loadMissions()
-  }, [user, refreshKey])
+  }, [user, token])
 
   const handleClaimReward = async (missionId: number) => {
-    if (!user) return
+    if (!user || !token) return
 
     try {
       setClaimingMission(missionId)
-      await claimMissionReward(user.id, missionId)
-      // Refresh missions
-      setRefreshKey((prev) => prev + 1)
+      const response = await fetch(`/api/missions/${missionId}/claim`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        // Refresh missions
+        const missionsRes = await fetch("/api/missions", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        if (missionsRes.ok) {
+          const data = await missionsRes.json()
+          setMissions(data.missions || [])
+        }
+      }
       setClaimingMission(null)
     } catch (error) {
       console.error("Error claiming reward:", error)
