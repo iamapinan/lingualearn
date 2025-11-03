@@ -42,9 +42,23 @@ export async function GET(request: NextRequest) {
       createdAt: users.createdAt,
     }).from(users)
 
+    // Convert Date objects to strings for JSON serialization
+    const serializedUsers = allUsers.map(user => ({
+      ...user,
+      joinedDate: user.joinedDate instanceof Date 
+        ? user.joinedDate.toISOString().split('T')[0] 
+        : user.joinedDate,
+      lastLoginAt: user.lastLoginAt instanceof Date 
+        ? user.lastLoginAt.toISOString() 
+        : user.lastLoginAt,
+      createdAt: user.createdAt instanceof Date 
+        ? user.createdAt.toISOString() 
+        : user.createdAt,
+    }))
+
     return NextResponse.json({
       success: true,
-      users: allUsers,
+      users: serializedUsers,
     })
   } catch (error) {
     console.error("Get users error:", error)

@@ -23,7 +23,24 @@ export async function GET(request: NextRequest, { params }: { params: { name: st
     if (userData.completedLessons) userData.completedLessons = JSON.parse(userData.completedLessons as string)
     if (userData.timedWriting) userData.timedWriting = JSON.parse(userData.timedWriting as string)
 
-    return NextResponse.json(userData)
+    // Convert Date objects to strings for JSON serialization
+    const serializedUserData = {
+      ...userData,
+      joinedDate: userData.joinedDate instanceof Date 
+        ? userData.joinedDate.toISOString().split('T')[0] 
+        : userData.joinedDate,
+      lastLoginAt: userData.lastLoginAt instanceof Date 
+        ? userData.lastLoginAt.toISOString() 
+        : userData.lastLoginAt,
+      createdAt: userData.createdAt instanceof Date 
+        ? userData.createdAt.toISOString() 
+        : userData.createdAt,
+      updatedAt: userData.updatedAt instanceof Date 
+        ? userData.updatedAt.toISOString() 
+        : userData.updatedAt,
+    }
+
+    return NextResponse.json(serializedUserData)
   } catch (error) {
     console.error("Error fetching user:", error)
     return NextResponse.json({ success: false, message: "Failed to fetch user", error: String(error) }, { status: 500 })
@@ -70,7 +87,24 @@ export async function PUT(request: NextRequest, { params }: { params: { name: st
     if (userData.completedLessons) userData.completedLessons = JSON.parse(userData.completedLessons as string)
     if (userData.timedWriting) userData.timedWriting = JSON.parse(userData.timedWriting as string)
 
-    return NextResponse.json(userData)
+    // Convert Date objects to strings for JSON serialization
+    const serializedUserData = {
+      ...userData,
+      joinedDate: userData.joinedDate instanceof Date 
+        ? userData.joinedDate.toISOString().split('T')[0] 
+        : userData.joinedDate,
+      lastLoginAt: userData.lastLoginAt instanceof Date 
+        ? userData.lastLoginAt.toISOString() 
+        : userData.lastLoginAt,
+      createdAt: userData.createdAt instanceof Date 
+        ? userData.createdAt.toISOString() 
+        : userData.createdAt,
+      updatedAt: userData.updatedAt instanceof Date 
+        ? userData.updatedAt.toISOString() 
+        : userData.updatedAt,
+    }
+
+    return NextResponse.json(serializedUserData)
   } catch (error) {
     console.error("Error updating user:", error)
     return NextResponse.json(

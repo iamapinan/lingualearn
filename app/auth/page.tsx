@@ -34,8 +34,8 @@ export default function AuthPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="bg-indigo-500 p-3 rounded-full">
-              <BookOpen className="h-8 w-8 text-white" />
+            <div>
+              <img src="/logo.svg" alt="LinguaLearn" width={96} height={96} />
             </div>
           </div>
           <CardTitle className="text-2xl">ยินดีต้อนรับสู่ LinguaLearn</CardTitle>

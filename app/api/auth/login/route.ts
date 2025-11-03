@@ -71,7 +71,9 @@ export async function POST(request: NextRequest) {
       level: user.level,
       totalPoints: user.totalPoints,
       streak: user.streak,
-      joinedDate: user.joinedDate,
+      joinedDate: user.joinedDate instanceof Date 
+        ? user.joinedDate.toISOString().split('T')[0] 
+        : user.joinedDate,
     }
 
     return NextResponse.json({

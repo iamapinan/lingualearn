@@ -112,7 +112,9 @@ export async function PATCH(request: NextRequest) {
         totalPoints: updatedUser.totalPoints,
         streak: updatedUser.streak,
         perfectLessonStreak: updatedUser.perfectLessonStreak,
-        joinedDate: updatedUser.joinedDate,
+        joinedDate: updatedUser.joinedDate instanceof Date 
+          ? updatedUser.joinedDate.toISOString().split('T')[0] 
+          : updatedUser.joinedDate,
         emailVerified: updatedUser.emailVerified,
       },
     })

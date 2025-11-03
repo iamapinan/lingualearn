@@ -50,7 +50,9 @@ export async function GET(request: NextRequest) {
       totalPoints: user.totalPoints,
       streak: user.streak,
       perfectLessonStreak: user.perfectLessonStreak,
-      joinedDate: user.joinedDate,
+      joinedDate: user.joinedDate instanceof Date 
+        ? user.joinedDate.toISOString().split('T')[0] 
+        : user.joinedDate,
       emailVerified: user.emailVerified,
     }
 
