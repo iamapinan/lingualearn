@@ -409,34 +409,50 @@ export default function HomePage() {
             </div>
             <CardContent className="p-4">
               <div className="space-y-4">
-                {challenges.slice(0, 3).map((challenge, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        challenge.completed
-                          ? "bg-gradient-to-br from-green-400 to-emerald-500 text-white"
-                          : "bg-gradient-to-br from-indigo-400 to-indigo-500 text-white"
-                      }`}
-                    >
-                      {challenge.completed ? <Check className="h-5 w-5" /> : <Target className="h-5 w-5" />}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium">{challenge.title}</p>
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm text-gray-500">
-                          {challenge.progress}/{challenge.requirementCount}
-                        </p>
-                        <p className="text-sm font-medium text-indigo-500 flex items-center">
-                          <Sparkles className="h-3 w-3 mr-1 text-amber-500" />+{challenge.xpReward} XP
-                        </p>
+                {challenges.slice(0, 3).map((challenge, index) => {
+                  // Ensure values are numbers
+                  const progress = Number(challenge.progress) || 0
+                  const requirementCount = Number(challenge.requirementCount) || 1
+                  // Calculate progress percentage, ensuring it's between 0 and 100
+                  const progressPercent = requirementCount > 0 
+                    ? Math.max(0, Math.min(100, (progress / requirementCount) * 100)) 
+                    : 0
+                  const isCompleted = challenge.completed || progress >= requirementCount
+                  
+                  // Debug log (remove in production)
+                  if (process.env.NODE_ENV === 'development') {
+                    console.log('Challenge:', challenge.title, 'Progress:', progress, 'Requirement:', requirementCount, 'Percent:', progressPercent)
+                  }
+                  
+                  return (
+                    <div key={challenge.id || index} className="flex items-center gap-3">
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          isCompleted
+                            ? "bg-gradient-to-br from-green-400 to-emerald-500 text-white"
+                            : "bg-gradient-to-br from-indigo-400 to-indigo-500 text-white"
+                        }`}
+                      >
+                        {isCompleted ? <Check className="h-5 w-5" /> : <Target className="h-5 w-5" />}
                       </div>
-                      <Progress
-                        value={(challenge.progress / challenge.requirementCount) * 100}
-                        className="h-1.5 mt-1"
-                      />
+                      <div className="flex-1">
+                        <p className="font-medium">{challenge.title}</p>
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm text-gray-500">
+                            {progress}/{requirementCount}
+                          </p>
+                          <p className="text-sm font-medium text-indigo-500 flex items-center">
+                            <Sparkles className="h-3 w-3 mr-1 text-amber-500" />+{challenge.xpReward || 0} XP
+                          </p>
+                        </div>
+                        <Progress
+                          value={progressPercent}
+                          className="h-1.5 mt-1"
+                        />
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
               <Button
                 variant="outline"
@@ -458,31 +474,47 @@ export default function HomePage() {
             </div>
             <CardContent className="p-4">
               <div className="space-y-4">
-                {missions.slice(0, 3).map((mission, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        mission.completed
-                          ? "bg-gradient-to-br from-green-400 to-emerald-500 text-white"
-                          : "bg-gradient-to-br from-amber-400 to-amber-500 text-white"
-                      }`}
-                    >
-                      {mission.completed ? <Check className="h-5 w-5" /> : <Zap className="h-5 w-5" />}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium">{mission.title}</p>
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm text-gray-500">
-                          {mission.progress}/{mission.requirementCount}
-                        </p>
-                        <p className="text-sm font-medium text-amber-500 flex items-center">
-                          <Sparkles className="h-3 w-3 mr-1 text-amber-500" />+{mission.xpReward} XP
-                        </p>
+                {missions.slice(0, 3).map((mission, index) => {
+                  // Ensure values are numbers
+                  const progress = Number(mission.progress) || 0
+                  const requirementCount = Number(mission.requirementCount) || 1
+                  // Calculate progress percentage, ensuring it's between 0 and 100
+                  const progressPercent = requirementCount > 0 
+                    ? Math.max(0, Math.min(100, (progress / requirementCount) * 100)) 
+                    : 0
+                  const isCompleted = mission.completed || progress >= requirementCount
+                  
+                  // Debug log (remove in production)
+                  if (process.env.NODE_ENV === 'development') {
+                    console.log('Mission:', mission.title, 'Progress:', progress, 'Requirement:', requirementCount, 'Percent:', progressPercent)
+                  }
+                  
+                  return (
+                    <div key={mission.id || index} className="flex items-center gap-3">
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          isCompleted
+                            ? "bg-gradient-to-br from-green-400 to-emerald-500 text-white"
+                            : "bg-gradient-to-br from-amber-400 to-amber-500 text-white"
+                        }`}
+                      >
+                        {isCompleted ? <Check className="h-5 w-5" /> : <Zap className="h-5 w-5" />}
                       </div>
-                      <Progress value={(mission.progress / mission.requirementCount) * 100} className="h-1.5 mt-1" />
+                      <div className="flex-1">
+                        <p className="font-medium">{mission.title}</p>
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm text-gray-500">
+                            {progress}/{requirementCount}
+                          </p>
+                          <p className="text-sm font-medium text-amber-500 flex items-center">
+                            <Sparkles className="h-3 w-3 mr-1 text-amber-500" />+{mission.xpReward || 0} XP
+                          </p>
+                        </div>
+                        <Progress value={progressPercent} className="h-1.5 mt-1" />
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
               <Button
                 variant="outline"

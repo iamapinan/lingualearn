@@ -56,7 +56,9 @@ export default function ChallengesPage() {
         body: JSON.stringify({ userId: user.id }),
       })
 
-      if (response.ok) {
+      const result = await response.json()
+
+      if (response.ok && result.success) {
         // Refresh challenges
         const challengesRes = await fetch("/api/challenges", {
           headers: {
@@ -67,9 +69,17 @@ export default function ChallengesPage() {
           const data = await challengesRes.json()
           setChallenges(data.challenges || [])
         }
+        
+        // Show success message (optional)
+        alert("ได้รับรางวัลสำเร็จ!")
+      } else {
+        // Show error message
+        alert(result.message || "ไม่สามารถรับรางวัลได้ กรุณาลองใหม่อีกครั้ง")
+        console.error("Claim reward error:", result)
       }
     } catch (error) {
       console.error("Error claiming challenge reward:", error)
+      alert("เกิดข้อผิดพลาดในการรับรางวัล กรุณาลองใหม่อีกครั้ง")
     }
   }
 
@@ -178,7 +188,10 @@ export default function ChallengesPage() {
               </CardHeader>
               <CardContent className="pb-2">
                 <p className="text-gray-600 text-sm mb-3">{challenge.description}</p>
-                <Progress value={(challenge.progress / challenge.requirementCount) * 100} className="h-2 mb-1" />
+                <Progress 
+                  value={((challenge.progress || 0) / (challenge.requirementCount || 1)) * 100} 
+                  className="h-2 mb-1" 
+                />
                 <div className="flex justify-between text-xs text-gray-500">
                   <span>Progress</span>
                   <span>
@@ -189,11 +202,11 @@ export default function ChallengesPage() {
               <CardFooter>
                 {challenge.completed ? (
                   <Button className="w-full" disabled>
-                    Completed
+                    รางวัลถูกรับแล้ว
                   </Button>
-                ) : challenge.progress >= challenge.requirementCount ? (
+                ) : (challenge.progress || 0) >= (challenge.requirementCount || 1) ? (
                   <Button className="w-full bg-indigo-500 hover:bg-indigo-600" onClick={() => handleClaimReward(challenge.id)}>
-                    Claim Reward
+                    รับรางวัล
                   </Button>
                 ) : (
                   <Button

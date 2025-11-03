@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db/connection"
-import { lessonCompletions, users } from "@/lib/db/schema"
+import { lessonCompletions, users, challenges, userChallenges, missions, userMissions } from "@/lib/db/schema"
 import { verifyToken } from "@/lib/auth/jwt"
 import { eq, and } from "drizzle-orm"
 import { updateStreak, updatePerfectLessonStreak } from "@/lib/streak-utils"
@@ -140,24 +140,35 @@ export async function POST(request: NextRequest) {
 
         if (!completedLessonsList.includes(lessonId)) {
           completedLessonsList.push(lessonId)
+          const newTotalXp = (user.totalXp || 0) + (xpEarned || 0)
+          const newTotalPoints = (user.totalPoints || 0) + (xpEarned || 0)
+          
           await db
             .update(users)
             .set({
               lessonsCompleted: (user.lessonsCompleted || 0) + 1,
               completedLessons: JSON.stringify(completedLessonsList),
-              totalXp: (user.totalXp || 0) + (xpEarned || 0),
-              totalPoints: (user.totalPoints || 0) + (xpEarned || 0),
-              level: Math.max(user.level || 1, 1 + Math.floor(((user.totalPoints || 0) + (xpEarned || 0)) / 1000)),
+              totalXp: newTotalXp,
+              totalPoints: newTotalPoints,
+              level: Math.max(user.level || 1, 1 + Math.floor(newTotalPoints / 100)),
             })
             .where(eq(users.id, userId))
 
           // อัปเดต streak เมื่อเสร็จบทเรียน
           await updateStreak(userId)
+
+          // อัปเดต challenge progress สำหรับ challenge ประเภท "lesson"
+          await updateChallengeProgress(userId, "lesson", 1)
+
+          // อัปเดต mission progress สำหรับ mission ประเภท "lesson"
+          await updateMissionProgress(userId, "lesson", 1)
         }
 
         // อัปเดต perfect lesson streak ถ้าได้คะแนน 100%
         if (score === 100) {
           await updatePerfectLessonStreak(userId, true)
+          // อัปเดต challenge progress สำหรับ "Perfect Score" challenge
+          await updateChallengeProgress(userId, "perfect_score", 1)
         } else {
           await updatePerfectLessonStreak(userId, false)
         }
@@ -174,5 +185,106 @@ export async function POST(request: NextRequest) {
       { error: "เกิดข้อผิดพลาดในการบันทึกข้อมูล" },
       { status: 500 }
     )
+  }
+}
+
+async function updateChallengeProgress(userId: number, challengeType: string, amount: number) {
+  const db = await getDb()
+
+  // Get challenges of the specified type
+  const challengeList = await db.select().from(challenges).where(eq(challenges.type, challengeType))
+
+  for (const challenge of challengeList) {
+    // Get user's progress on this challenge
+    const userChallenge = await db
+      .select()
+      .from(userChallenges)
+      .where(and(eq(userChallenges.userId, userId), eq(userChallenges.challengeId, challenge.id)))
+      .limit(1)
+
+    if (userChallenge.length > 0) {
+      // Update existing progress
+      const challengeData = userChallenge[0]
+      if (!challengeData.completed) {
+        const newProgress = challengeData.progress + amount
+        const completed = newProgress >= challenge.requirementCount
+
+        await db
+          .update(userChallenges)
+          .set({
+            progress: newProgress,
+            completed,
+            completedAt: completed ? new Date().toISOString() : challengeData.completedAt,
+          })
+          .where(eq(userChallenges.id, challengeData.id))
+      }
+    } else {
+      // Create new progress entry
+      const completed = amount >= challenge.requirementCount
+      await db.insert(userChallenges).values({
+        userId,
+        challengeId: challenge.id,
+        progress: amount,
+        completed,
+        completedAt: completed ? new Date().toISOString() : null,
+      })
+    }
+  }
+}
+
+async function updateMissionProgress(userId: number, missionType: string, amount: number) {
+  const db = await getDb()
+
+  // Get missions that match the type
+  const missionList = await db.select().from(missions)
+  const relevantMissions = missionList.filter((mission) => {
+    try {
+      const requirements = JSON.parse(mission.requirements as string)
+      return requirements.type === missionType
+    } catch (e) {
+      return false
+    }
+  })
+
+  for (const mission of relevantMissions) {
+    // Get user's progress on this mission
+    const userMission = await db
+      .select()
+      .from(userMissions)
+      .where(and(eq(userMissions.userId, userId), eq(userMissions.missionId, mission.id)))
+      .limit(1)
+
+    const requirements = JSON.parse(mission.requirements as string)
+
+    if (userMission.length > 0) {
+      // Update existing progress
+      const missionData = userMission[0]
+      if (!missionData.completed) {
+        const newProgress = missionData.progress + amount
+        const completed = newProgress >= requirements.count
+
+        await db
+          .update(userMissions)
+          .set({
+            progress: newProgress,
+            completed,
+            completedAt: completed ? new Date().toISOString() : missionData.completedAt,
+          })
+          .where(eq(userMissions.id, missionData.id))
+      }
+    } else {
+      // Create new progress entry
+      const completed = amount >= requirements.count
+
+      await db.insert(userMissions).values({
+        userId,
+        missionId: mission.id,
+        progress: amount,
+        requirementCount: requirements.count,
+        completed,
+        completedAt: completed ? new Date().toISOString() : null,
+        claimed: false,
+      })
+    }
   }
 }

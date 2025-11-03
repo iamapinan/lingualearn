@@ -1,9 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getDb, schema } from "@/lib/db"
+import { getDb } from "@/lib/db/connection"
+import { missions, userMissions, users, userBadges, lessonCompletions } from "@/lib/db/schema"
 import { eq, and } from "drizzle-orm"
 import { verifyToken } from "@/lib/auth/jwt"
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const authHeader = request.headers.get("authorization")
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -23,12 +24,13 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       )
     }
 
+    const resolvedParams = await params
     const db = await getDb()
-    const missionId = Number.parseInt(params.id)
+    const missionId = Number.parseInt(resolvedParams.id)
     const userId = payload.userId
 
     // Get the mission to determine rewards
-    const mission = await db.select().from(schema.missions).where(eq(schema.missions.id, missionId)).limit(1)
+    const mission = await db.select().from(missions).where(eq(missions.id, missionId)).limit(1)
     if (mission.length === 0) {
       return NextResponse.json({ success: false, message: "Mission not found" }, { status: 404 })
     }
@@ -36,38 +38,51 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     // Get or create user mission entry
     let userMission = await db
       .select()
-      .from(schema.userMissions)
-      .where(and(eq(schema.userMissions.userId, userId), eq(schema.userMissions.missionId, missionId)))
+      .from(userMissions)
+      .where(and(eq(userMissions.userId, userId), eq(userMissions.missionId, missionId)))
       .limit(1)
 
     if (userMission.length === 0) {
-      // Parse requirementCount from requirements if needed
-      let requirementCount = 1
-      if (mission[0].requirements) {
-        try {
-          const req = typeof mission[0].requirements === 'string' 
-            ? JSON.parse(mission[0].requirements) 
-            : mission[0].requirements
-          requirementCount = req.count || req.requirementCount || 1
-        } catch {
-          requirementCount = 1
-        }
-      }
+      // Mission progress entry doesn't exist - check actual progress
+      // For lesson missions, check actual lesson completions
+      const requirements = typeof mission[0].requirements === 'string' 
+        ? JSON.parse(mission[0].requirements) 
+        : mission[0].requirements
 
-      // Create user mission entry if it doesn't exist
-      const [newUserMission] = await db
-        .insert(schema.userMissions)
-        .values({
+      if (requirements.type === "lesson") {
+        const lessonCompletionsData = await db
+          .select()
+          .from(lessonCompletions)
+          .where(eq(lessonCompletions.userId, userId))
+        
+        const uniqueLessons = new Set(lessonCompletionsData.map(lc => lc.lessonId))
+        const actualProgress = uniqueLessons.size
+        const requiredCount = requirements.count || 1
+
+        if (actualProgress < requiredCount) {
+          return NextResponse.json(
+            { success: false, message: `Mission not completed. Progress: ${actualProgress}/${requiredCount}` },
+            { status: 400 }
+          )
+        }
+
+        // Create user mission entry with actual progress
+        await db.insert(userMissions).values({
           userId,
           missionId,
-          progress: requirementCount,
-          requirementCount,
+          progress: Math.min(actualProgress, requiredCount),
+          requirementCount: requiredCount,
           completed: true,
           completedAt: new Date().toISOString(),
           claimed: true,
         })
-        .returning()
-      userMission = [newUserMission]
+      } else {
+        // For other mission types, require progress >= requirementCount
+        return NextResponse.json(
+          { success: false, message: "Mission progress not found. Please complete the mission first." },
+          { status: 400 }
+        )
+      }
     } else {
       const userMissionData = userMission[0]
 
@@ -87,15 +102,15 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
       // Mark as claimed
       await db
-        .update(schema.userMissions)
+        .update(userMissions)
         .set({
           claimed: true,
         })
-        .where(eq(schema.userMissions.id, userMissionData.id))
+        .where(eq(userMissions.id, userMissionData.id))
     }
 
     // Award XP and points to user
-    const user = await db.select().from(schema.users).where(eq(schema.users.id, userId)).limit(1)
+    const user = await db.select().from(users).where(eq(users.id, userId)).limit(1)
     if (user.length > 0) {
       const userData = user[0]
       const totalXp = (userData.totalXp || 0) + (mission[0].xpReward || 0)
@@ -105,28 +120,28 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       const newLevel = 1 + Math.floor(totalPoints / 100)
 
       await db
-        .update(schema.users)
+        .update(users)
         .set({
           totalXp,
           totalPoints,
           level: newLevel > userData.level ? newLevel : userData.level,
         })
-        .where(eq(schema.users.id, userId))
+        .where(eq(users.id, userId))
 
       // Award badge if applicable
       if (mission[0].badgeId) {
         // Check if user already has this badge
         const existingBadge = await db
           .select()
-          .from(schema.userBadges)
+          .from(userBadges)
           .where(
-            and(eq(schema.userBadges.userId, userId), eq(schema.userBadges.badgeId, mission[0].badgeId))
+            and(eq(userBadges.userId, userId), eq(userBadges.badgeId, mission[0].badgeId))
           )
           .limit(1)
 
         if (existingBadge.length === 0) {
           // Award badge to user
-          await db.insert(schema.userBadges).values({
+          await db.insert(userBadges).values({
             userId,
             badgeId: mission[0].badgeId,
             earnedAt: new Date().toISOString(),

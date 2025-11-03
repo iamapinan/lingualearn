@@ -68,7 +68,9 @@ export default function MissionsPage() {
         },
       })
 
-      if (response.ok) {
+      const result = await response.json()
+
+      if (response.ok && result.success) {
         // Refresh missions
         const missionsRes = await fetch("/api/missions", {
           headers: {
@@ -79,6 +81,13 @@ export default function MissionsPage() {
           const data = await missionsRes.json()
           setMissions(data.missions || [])
         }
+        
+        // Show success message (optional)
+        alert("ได้รับรางวัลสำเร็จ!")
+      } else {
+        // Show error message
+        alert(result.message || "ไม่สามารถรับรางวัลได้ กรุณาลองใหม่อีกครั้ง")
+        console.error("Claim reward error:", result)
       }
       setClaimingMission(null)
     } catch (error) {
@@ -150,11 +159,11 @@ export default function MissionsPage() {
                   <div className="flex justify-between items-center text-sm mb-1">
                     <span>Progress</span>
                     <span className="font-medium">
-                      {mission.progress} / {mission.requirementCount}
+                      {mission.progress || 0} / {mission.requirementCount || 1}
                     </span>
                   </div>
                   <Progress
-                    value={(mission.progress / mission.requirementCount) * 100}
+                    value={((mission.progress || 0) / (mission.requirementCount || 1)) * 100}
                     className="h-2 bg-gray-200 mb-3"
                   />
 
@@ -232,11 +241,11 @@ export default function MissionsPage() {
                   <div className="flex justify-between items-center text-sm mb-1">
                     <span>Progress</span>
                     <span className="font-medium">
-                      {mission.progress} / {mission.requirementCount}
+                      {mission.progress || 0} / {mission.requirementCount || 1}
                     </span>
                   </div>
                   <Progress
-                    value={(mission.progress / mission.requirementCount) * 100}
+                    value={((mission.progress || 0) / (mission.requirementCount || 1)) * 100}
                     className="h-2 bg-gray-200 mb-3"
                   />
 
@@ -320,11 +329,11 @@ export default function MissionsPage() {
                   <div className="flex justify-between items-center text-sm mb-1">
                     <span>Progress</span>
                     <span className="font-medium">
-                      {mission.progress} / {mission.requirementCount}
+                      {mission.progress || 0} / {mission.requirementCount || 1}
                     </span>
                   </div>
                   <Progress
-                    value={(mission.progress / mission.requirementCount) * 100}
+                    value={((mission.progress || 0) / (mission.requirementCount || 1)) * 100}
                     className="h-2 bg-gray-200 mb-3"
                   />
 

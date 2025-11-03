@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
 
     const db = await getDb()
     
-    const allChallenges = await db
+    const allChallengesRaw = await db
       .select({
         id: challenges.id,
         title: challenges.title,
@@ -43,6 +43,19 @@ export async function GET(request: NextRequest) {
         userChallenges,
         sql`${challenges.id} = ${userChallenges.challengeId} AND ${userChallenges.userId} = ${payload.userId}`
       )
+
+    // Ensure all values are properly formatted
+    const allChallenges = allChallengesRaw.map((challenge) => ({
+      id: challenge.id,
+      title: challenge.title,
+      description: challenge.description,
+      type: challenge.type,
+      xpReward: challenge.xpReward || 0,
+      requirementCount: challenge.requirementCount || 1,
+      expiresAt: challenge.expiresAt,
+      progress: Number(challenge.progress) || 0,
+      completed: Boolean(challenge.completed),
+    }))
 
     return NextResponse.json({
       success: true,

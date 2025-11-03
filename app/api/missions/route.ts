@@ -78,16 +78,16 @@ export async function GET(request: NextRequest) {
         description: mission.description,
         type: mission.type,
         requirements: mission.requirements,
-        xpReward: mission.xpReward,
-        pointsReward: mission.pointsReward,
-        badgeId: mission.badgeId,
+        xpReward: Number(mission.xpReward) || 0,
+        pointsReward: Number(mission.pointsReward) || 0,
+        badgeId: mission.badgeId || null,
         expiresAt: mission.expiresAt,
         missionOrder: mission.missionOrder,
         category: mission.category,
-        progress: mission.progress || 0,
-        requirementCount,
-        completed: mission.completed || false,
-        claimed: mission.claimed || false,
+        progress: Number(mission.progress) || 0,
+        requirementCount: Number(requirementCount) || 1,
+        completed: Boolean(mission.completed),
+        claimed: Boolean(mission.claimed),
       }
     })
 
