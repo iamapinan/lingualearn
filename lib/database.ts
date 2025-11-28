@@ -2344,6 +2344,9 @@ export async function completeLessonAndSaveProgress(
   xpEarned?: number,
 ): Promise<boolean> {
   try {
+    // Ensure user exists in IndexedDB before saving
+    await ensureUserExistsInIndexedDB(userId)
+
     const db = await initializeDatabase()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(["lesson_completions", "users", "user_stats"], "readwrite")
@@ -2615,6 +2618,9 @@ export async function saveSpeakingPracticeProgress(
   pronunciationScore: number,
 ): Promise<boolean> {
   try {
+    // Ensure user exists in IndexedDB before saving
+    await ensureUserExistsInIndexedDB(userId)
+
     const db = await initializeDatabase()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(["users"], "readwrite")
@@ -2854,6 +2860,86 @@ export async function getGameProgress(userId: number, gameId: string): Promise<a
   }
 }
 
+// Helper function to ensure user exists in IndexedDB before saving activity data
+export async function ensureUserExistsInIndexedDB(userId: number): Promise<void> {
+  try {
+    const db = await initializeDatabase()
+    
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(["users"], "readwrite")
+      const usersStore = transaction.objectStore("users")
+      const request = usersStore.get(userId)
+      
+      request.onsuccess = () => {
+        if (!request.result) {
+          // User doesn't exist in IndexedDB, create from localStorage
+          const userStr = localStorage.getItem("lingualearn_user")
+          if (userStr) {
+            try {
+              const user = JSON.parse(userStr)
+              if (user.id === userId) {
+                // Ensure all required fields are present with default values
+                const userRecord = {
+                  ...user,
+                  totalXp: user.totalXp || 0,
+                  totalPoints: user.totalPoints || 0,
+                  level: user.level || 1,
+                  lessonsCompleted: user.lessonsCompleted || 0,
+                  games: user.games || {},
+                  speakingPractice: user.speakingPractice || {
+                    totalPracticed: 0,
+                    correctCount: 0,
+                    averageScore: 0,
+                    history: [],
+                  },
+                  practiceStats: user.practiceStats || {},
+                  assessment: user.assessment || null,
+                  timedWriting: user.timedWriting || null,
+                  streak: user.streak || 0,
+                  perfectLessonStreak: user.perfectLessonStreak || 0,
+                  completedLessons: user.completedLessons || [],
+                  studyTimes: user.studyTimes || {},
+                }
+                
+                // Create user in IndexedDB
+                const addRequest = usersStore.add(userRecord)
+                
+                addRequest.onsuccess = () => {
+                  console.log(`User ${userId} created in IndexedDB`)
+                  resolve()
+                }
+                
+                addRequest.onerror = (event) => {
+                  console.error("Error creating user in IndexedDB:", event)
+                  reject(new Error("Error creating user in IndexedDB"))
+                }
+              } else {
+                reject(new Error(`User ID mismatch: localStorage has ${user.id}, requested ${userId}`))
+              }
+            } catch (parseError) {
+              console.error("Error parsing user from localStorage:", parseError)
+              reject(new Error("Error parsing user from localStorage"))
+            }
+          } else {
+            reject(new Error("No user found in localStorage"))
+          }
+        } else {
+          // User already exists in IndexedDB
+          resolve()
+        }
+      }
+      
+      request.onerror = (event) => {
+        console.error("Error checking user in IndexedDB:", event)
+        reject(new Error("Error checking user in IndexedDB"))
+      }
+    })
+  } catch (error) {
+    console.error("Error in ensureUserExistsInIndexedDB:", error)
+    throw error
+  }
+}
+
 export async function saveGameResult(result: {
   userId: number
   gameType: string
@@ -2864,6 +2950,9 @@ export async function saveGameResult(result: {
   try {
     // Use userId from parameter instead of localStorage
     const userId = result.userId
+
+    // Ensure user exists in IndexedDB before saving
+    await ensureUserExistsInIndexedDB(userId)
 
     const db = await initializeDatabase()
     return new Promise((resolve, reject) => {
@@ -2969,6 +3058,9 @@ interface AssessmentResult {
 // Add this function to save assessment results
 export async function saveAssessmentResult(userId: number, result: AssessmentResult): Promise<boolean> {
   try {
+    // Ensure user exists in IndexedDB before saving
+    await ensureUserExistsInIndexedDB(userId)
+
     const db = await initializeDatabase()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(["users"], "readwrite")
@@ -3107,6 +3199,9 @@ export async function saveAssessmentResultEnhanced(
   },
 ): Promise<{ success: boolean; leveledUp: boolean }> {
   try {
+    // Ensure user exists in IndexedDB before saving
+    await ensureUserExistsInIndexedDB(userId)
+
     const db = await initializeDatabase()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(["users", "lessons", "lesson_completions"], "readwrite")
@@ -3524,6 +3619,9 @@ export async function saveWritingPracticeProgress(
   userAnswer: string,
 ): Promise<boolean> {
   try {
+    // Ensure user exists in IndexedDB before saving
+    await ensureUserExistsInIndexedDB(userId)
+
     const db = await initializeDatabase()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(["users"], "readwrite")
