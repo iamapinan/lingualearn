@@ -1,2 +1,3 @@
 // Re-export from connection.ts which uses MySQL
-export { getDb, schema } from "./connection"
+export { getDb } from "./connection"
+export * as schema from "./schema"

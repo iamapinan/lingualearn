@@ -6,78 +6,11 @@ import { GameCard } from "@/components/game-card"
 import { useRouter } from "next/navigation"
 import { BackButton } from "@/components/back-button"
 
-type GameDifficulty = "easy" | "medium" | "hard"
-
-interface Game {
-  id: string
-  title: string
-  description: string
-  image: string
-  difficulty: GameDifficulty
-  xpReward: number
-  category: string
-}
+import { games } from "@/lib/games-data"
 
 export default function GamesPage() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState("all")
-
-  const games: Game[] = [
-    {
-      id: "memory-match",
-      title: "Memory Match",
-      description: "Match pairs of words to improve your vocabulary",
-      image: "/memory-match-cover.png",
-      difficulty: "medium",
-      xpReward: 25,
-      category: "vocabulary",
-    },
-    {
-      id: "word-scramble",
-      title: "Word Scramble",
-      description: "Unscramble the letters to form correct words",
-      image: "/word-scramble-cover.png",
-      difficulty: "easy",
-      xpReward: 20,
-      category: "vocabulary",
-    },
-    {
-      id: "speed-challenge",
-      title: "Speed Challenge",
-      description: "Translate words as quickly as possible",
-      image: "/speed-challenge-cover.png",
-      difficulty: "hard",
-      xpReward: 30,
-      category: "translation",
-    },
-    {
-      id: "hangman",
-      title: "Hangman",
-      description: "Guess the word before the hangman is complete",
-      image: "/hangman-cover.png",
-      difficulty: "medium",
-      xpReward: 25,
-      category: "vocabulary",
-    },
-    {
-      id: "word-search",
-      title: "Word Search",
-      description: "Find hidden words in a grid of letters",
-      image: "/word-search-cover.png",
-      difficulty: "medium",
-      xpReward: 20,
-      category: "vocabulary",
-    },
-    {
-      id: "mystery-wheel",
-      title: "Mystery Wheel Game",
-      description: "Spin the wheel and guess the word from the hint",
-      image: "/mystery-wheel-cover.png",
-      difficulty: "medium",
-      xpReward: 25,
-      category: "vocabulary",
-    },
-  ]
 
   const handleGameClick = (gameId: string) => {
     router.push(`/games/${gameId}`)
@@ -90,9 +23,10 @@ export default function GamesPage() {
 
       <div className="mb-8">
         <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="all">All Games</TabsTrigger>
             <TabsTrigger value="vocabulary">Vocabulary</TabsTrigger>
+            <TabsTrigger value="grammar">Grammar</TabsTrigger>
             <TabsTrigger value="translation">Translation</TabsTrigger>
           </TabsList>
 
@@ -116,6 +50,24 @@ export default function GamesPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
               {games
                 .filter((game) => game.category === "vocabulary")
+                .map((game) => (
+                  <GameCard
+                    key={game.id}
+                    title={game.title}
+                    description={game.description}
+                    imageSrc={game.image}
+                    difficulty={game.difficulty}
+                    xpReward={game.xpReward}
+                    onClick={() => handleGameClick(game.id)}
+                  />
+                ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="grammar">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+              {games
+                .filter((game) => game.category === "grammar")
                 .map((game) => (
                   <GameCard
                     key={game.id}

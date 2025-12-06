@@ -14,6 +14,17 @@ interface User {
   totalPoints: number
   streak?: number
   joinedDate: string
+  games?: {
+    [gameId: string]: {
+      bestScore: number
+      timesPlayed: number
+      history: {
+        score: number
+        details: any
+        timestamp: string
+      }[]
+    }
+  }
 }
 
 interface AuthContextType {

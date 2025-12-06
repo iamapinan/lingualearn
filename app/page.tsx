@@ -28,6 +28,7 @@ import LearningPath from "@/components/learning-path"
 import { calculateLevelFromXP, calculateXPForNextLevel, calculateLevelProgress } from "@/lib/scoring-system"
 import { GameCard } from "@/components/game-card"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { games } from "@/lib/games-data"
 
 export default function HomePage() {
   const router = useRouter()
@@ -316,41 +317,22 @@ export default function HomePage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <GameCard
-                title="Word Scramble"
-                description="จัดเรียงตัวอักษรให้ถูกต้อง"
-                imageSrc="/word-scramble-cover.png"
-                xpReward={20}
-                difficulty="easy"
-                href="/games/word-scramble"
-                bestScore={120}
-                timesPlayed={5}
-                onClick={() => router.push("/games/word-scramble")}
-              />
-
-              <GameCard
-                title="Memory Match"
-                description="จับคู่คำศัพท์"
-                imageSrc="/memory-match-cover.png"
-                xpReward={25}
-                difficulty="medium"
-                href="/games/memory-match"
-                bestScore={85}
-                timesPlayed={3}
-                onClick={() => router.push("/games/memory-match")}
-              />
-
-              <GameCard
-                title="Speed Challenge"
-                description="แปลให้เร็วที่สุด"
-                imageSrc="/speed-challenge-cover.png"
-                xpReward={30}
-                difficulty="hard"
-                href="/games/speed-challenge"
-                bestScore={210}
-                timesPlayed={7}
-                onClick={() => router.push("/games/speed-challenge")}
-              />
+              {games.map((game) => (
+                <GameCard
+                  key={game.id}
+                  title={game.title}
+                  description={game.description}
+                  imageSrc={game.image}
+                  xpReward={game.xpReward}
+                  difficulty={game.difficulty}
+                  href={`/games/${game.id}`}
+                  // In a real app, we would fetch user stats for each game
+                  // For now, we'll just show placeholders or nothing
+                  bestScore={0} 
+                  timesPlayed={0}
+                  onClick={() => router.push(`/games/${game.id}`)}
+                />
+              ))}
             </div>
           </div>
         </div>
