@@ -317,22 +317,23 @@ export default function HomePage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {games.map((game) => (
-                <GameCard
-                  key={game.id}
-                  title={game.title}
-                  description={game.description}
-                  imageSrc={game.image}
-                  xpReward={game.xpReward}
-                  difficulty={game.difficulty}
-                  href={`/games/${game.id}`}
-                  // In a real app, we would fetch user stats for each game
-                  // For now, we'll just show placeholders or nothing
-                  bestScore={0} 
-                  timesPlayed={0}
-                  onClick={() => router.push(`/games/${game.id}`)}
-                />
-              ))}
+              {games.map((game) => {
+                const gameStats = user?.games?.[game.id]
+                return (
+                  <GameCard
+                    key={game.id}
+                    title={game.title}
+                    description={game.description}
+                    imageSrc={game.image}
+                    xpReward={game.xpReward}
+                    difficulty={game.difficulty}
+                    href={`/games/${game.id}`}
+                    bestScore={gameStats?.bestScore || 0}
+                    timesPlayed={gameStats?.timesPlayed || 0}
+                    onClick={() => router.push(`/games/${game.id}`)}
+                  />
+                )
+              })}
             </div>
           </div>
         </div>
