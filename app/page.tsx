@@ -319,7 +319,7 @@ export default function HomePage() {
               <GameCard
                 title="Word Scramble"
                 description="จัดเรียงตัวอักษรให้ถูกต้อง"
-                imageSrc="/wscb.png"
+                imageSrc="/word-scramble-cover.png"
                 xpReward={20}
                 difficulty="easy"
                 href="/games/word-scramble"
@@ -331,7 +331,7 @@ export default function HomePage() {
               <GameCard
                 title="Memory Match"
                 description="จับคู่คำศัพท์"
-                imageSrc="/memory-card-game.png"
+                imageSrc="/memory-match-cover.png"
                 xpReward={25}
                 difficulty="medium"
                 href="/games/memory-match"
@@ -343,7 +343,7 @@ export default function HomePage() {
               <GameCard
                 title="Speed Challenge"
                 description="แปลให้เร็วที่สุด"
-                imageSrc="/speed-challenge-cover.svg"
+                imageSrc="/speed-challenge-cover.png"
                 xpReward={30}
                 difficulty="hard"
                 href="/games/speed-challenge"

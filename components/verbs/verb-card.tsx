@@ -30,9 +30,8 @@ export function VerbCard({ verb, onClick }: VerbCardProps) {
       className="hover:shadow-lg transition-shadow cursor-pointer" 
       onClick={onClick}
     >
-      <CardHeader>
+      <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
-          <CardTitle className="text-xl">{verb.baseForm}</CardTitle>
           <div className="flex gap-2">
             <Badge className={categoryColors[verb.category]}>
               {verb.category === "regular" ? "Regular" : "Irregular"}
@@ -41,41 +40,40 @@ export function VerbCard({ verb, onClick }: VerbCardProps) {
               Level {verb.difficulty}
             </Badge>
           </div>
+          <div className="text-xs text-gray-500">
+            แม่นยำ: {accuracyRate}%
+          </div>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div>
-              <span className="text-gray-600">Past Simple:</span>
-              <p className="font-medium">{verb.pastSimple}</p>
+        <div className="space-y-4">
+          {/* 3 Forms Grid */}
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="p-2 bg-gray-50 rounded-lg border border-gray-100">
+              <span className="text-xs text-gray-500 block mb-1">V1 (Base)</span>
+              <p className="font-bold text-indigo-600 break-all">{verb.baseForm}</p>
             </div>
-            <div>
-              <span className="text-gray-600">Past Participle:</span>
-              <p className="font-medium">{verb.pastParticiple}</p>
+            <div className="p-2 bg-gray-50 rounded-lg border border-gray-100">
+              <span className="text-xs text-gray-500 block mb-1">V2 (Past)</span>
+              <p className="font-bold text-indigo-600 break-all">{verb.pastSimple}</p>
+            </div>
+            <div className="p-2 bg-gray-50 rounded-lg border border-gray-100">
+              <span className="text-xs text-gray-500 block mb-1">V3 (Participle)</span>
+              <p className="font-bold text-indigo-600 break-all">{verb.pastParticiple}</p>
             </div>
           </div>
 
-          <div>
-            <span className="text-gray-600 text-sm">แปล:</span>
-            <p className="font-medium">{verb.translation}</p>
-          </div>
+          <div className="pt-2 border-t border-gray-100">
+            <div className="mb-2">
+              <span className="text-gray-500 text-sm mr-2">แปล:</span>
+              <span className="font-medium text-gray-900">{verb.translation}</span>
+            </div>
 
-          {verb.exampleSentence && (
-            <div>
-              <span className="text-gray-600 text-sm">ตัวอย่าง:</span>
-              <p className="text-sm italic">{verb.exampleSentence}</p>
-            </div>
-          )}
-
-          <div className="flex justify-between items-center pt-2 border-t">
-            <div className="text-sm">
-              <span className="text-gray-600">ความแม่นยำ:</span>
-              <span className="font-semibold ml-1">{accuracyRate}%</span>
-            </div>
-            <div className="text-xs text-gray-500">
-              ถูก: {verb.correctCount} | ผิด: {verb.incorrectCount}
-            </div>
+            {verb.exampleSentence && (
+              <div className="text-sm text-gray-600 italic bg-gray-50 p-2 rounded">
+                "{verb.exampleSentence}"
+              </div>
+            )}
           </div>
         </div>
       </CardContent>

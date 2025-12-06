@@ -10,13 +10,18 @@ export async function POST(request: NextRequest) {
     
     // Check if verbs already exist
     const existingVerbs = await db.select().from(verbs).limit(1)
+    const force = request.nextUrl.searchParams.get("force") === "true"
     
-    if (existingVerbs.length > 0) {
+    if (existingVerbs.length > 0 && !force) {
       return NextResponse.json({
         success: false,
-        message: "Verbs already exist in database",
+        message: "Verbs already exist in database. Use ?force=true to overwrite.",
         count: existingVerbs.length,
       })
+    }
+
+    if (force) {
+      await db.delete(verbs)
     }
 
     // Insert all verbs

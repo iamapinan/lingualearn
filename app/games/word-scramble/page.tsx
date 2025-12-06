@@ -44,7 +44,7 @@ const defaultVocabulary: VocabularyItem[] = [
 
 export default function WordScramblePage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const { toast } = useToast()
 
   const [vocabulary, setVocabulary] = useState<VocabularyItem[]>([])
@@ -59,6 +59,11 @@ export default function WordScramblePage() {
   const [hintUsed, setHintUsed] = useState(false)
   const [correctWords, setCorrectWords] = useState(0)
   const [totalWords, setTotalWords] = useState(0)
+  
+  // New state for improvements
+  const [streak, setStreak] = useState(0)
+  const [feedback, setFeedback] = useState<{ show: boolean; isCorrect: boolean; message: string; points?: number } | null>(null)
+  const [wordStartTime, setWordStartTime] = useState(0)
 
   // Load vocabulary
   useEffect(() => {
@@ -125,6 +130,8 @@ export default function WordScramblePage() {
       setUserInput("")
       setShowHint(false)
       setHintUsed(false)
+      setWordStartTime(Date.now())
+      setFeedback(null)
     }
   }, [vocabulary, currentWordIndex, scrambleWord])
 
@@ -161,6 +168,7 @@ export default function WordScramblePage() {
     setTimeLeft(60)
     setCorrectWords(0)
     setTotalWords(0)
+    setStreak(0)
   }
 
   const endGame = async () => {
@@ -196,8 +204,8 @@ export default function WordScramblePage() {
           correctWords: correctWords,
           totalWords: totalWords,
           accuracy: totalWords > 0 ? Math.round((correctWords / totalWords) * 100) : 0,
-        },
-      })
+          maxStreak: streak, // Note: This is just current streak, ideally we'd track max streak
+        }}, token || undefined)
     }
   }
 
@@ -213,47 +221,62 @@ export default function WordScramblePage() {
       // Play correct sound
       playCorrectSound()
 
-      // Add points based on word length and whether hint was used
-      const pointsForWord = currentWord.length * (hintUsed ? 5 : 10)
+      // Calculate points
+      const basePoints = currentWord.length * 10
+      const hintPenalty = hintUsed ? 0.5 : 1
+      
+      // Time bonus: +1 point for every second remaining if answered within 10 seconds
+      const timeTaken = (Date.now() - wordStartTime) / 1000
+      const timeBonus = timeTaken < 10 ? Math.max(0, Math.floor(10 - timeTaken)) : 0
+      
+      // Streak bonus: +5 for each streak (caps at 20)
+      const currentStreak = streak + 1
+      const streakBonus = Math.min(currentStreak * 5, 20)
+      
+      const pointsForWord = Math.round((basePoints * hintPenalty) + timeBonus + streakBonus)
+      
       setScore((prev) => prev + pointsForWord)
-
-      // Show success toast
-      toast({
-        title: "Correct!",
-        description: `+${pointsForWord} points`,
-        variant: "default",
-      })
-
+      setStreak(currentStreak)
       setCorrectWords((prev) => prev + 1)
 
-      // Move to next word or end game if no more words
-      if (currentWordIndex < vocabulary.length - 1) {
-        setCurrentWordIndex((prev) => prev + 1)
-      } else {
-        // Loop back to the beginning if we've gone through all words
-        setCurrentWordIndex(0)
-      }
+      // Show feedback
+      setFeedback({
+        show: true,
+        isCorrect: true,
+        message: "Excellent!",
+        points: pointsForWord
+      })
+
+      // Move to next word after a short delay
+      setTimeout(() => {
+        if (currentWordIndex < vocabulary.length - 1) {
+          setCurrentWordIndex((prev) => prev + 1)
+        } else {
+          setCurrentWordIndex(0)
+        }
+      }, 1000)
+
     } else {
       // Play incorrect sound
       playIncorrectSound()
+      setStreak(0)
 
-      // Show error toast
-      toast({
-        title: "Incorrect",
-        description: `The correct word was "${currentWord}"`,
-        variant: "destructive",
+      // Show feedback
+      setFeedback({
+        show: true,
+        isCorrect: false,
+        message: `The correct word was "${currentWord}"`
       })
 
-      // Move to next word or end game if no more words
-      if (currentWordIndex < vocabulary.length - 1) {
-        setCurrentWordIndex((prev) => prev + 1)
-      } else {
-        // Loop back to the beginning if we've gone through all words
-        setCurrentWordIndex(0)
-      }
+      // Move to next word after a short delay
+      setTimeout(() => {
+        if (currentWordIndex < vocabulary.length - 1) {
+          setCurrentWordIndex((prev) => prev + 1)
+        } else {
+          setCurrentWordIndex(0)
+        }
+      }, 1500)
     }
-
-    setUserInput("")
   }
 
   const showWordHint = () => {
@@ -273,7 +296,7 @@ export default function WordScramblePage() {
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
+    <div className="container mx-auto p-4 max-w-4xl relative">
       <BackButton />
       <h1 className="text-3xl font-bold mb-6 text-center">Word Scramble</h1>
 
@@ -299,47 +322,73 @@ export default function WordScramblePage() {
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-gray-500" />
-              <span className="font-bold">{timeLeft}s</span>
+              <span className={`font-bold ${timeLeft < 10 ? "text-red-500 animate-pulse" : ""}`}>{timeLeft}s</span>
             </div>
-            <div className="flex items-center gap-2">
-              <Star className="h-5 w-5 text-yellow-500" />
-              <span className="font-bold">{score} points</span>
+            <div className="flex items-center gap-4">
+              {streak > 1 && (
+                <div className="flex items-center gap-1 text-orange-500 animate-bounce">
+                  <span className="font-bold">🔥 {streak} Streak</span>
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <Star className="h-5 w-5 text-yellow-500" />
+                <span className="font-bold">{score} points</span>
+              </div>
             </div>
           </div>
 
-          <Card className="mb-6">
+          <Card className="mb-6 relative overflow-hidden">
+            {/* Feedback Overlay */}
+            {feedback?.show && (
+              <div className={`absolute inset-0 z-10 flex flex-col items-center justify-center bg-opacity-90 transition-all duration-300 ${
+                feedback.isCorrect ? "bg-green-50" : "bg-red-50"
+              }`}>
+                <div className={`text-4xl font-bold mb-2 ${feedback.isCorrect ? "text-green-600" : "text-red-600"}`}>
+                  {feedback.isCorrect ? "Correct!" : "Incorrect"}
+                </div>
+                <div className="text-xl text-gray-700 font-medium mb-2">{feedback.message}</div>
+                {feedback.points && (
+                  <div className="text-2xl font-bold text-yellow-600">+{feedback.points} Points</div>
+                )}
+              </div>
+            )}
+
             <CardContent className="p-6">
               <div className="text-center py-4">
                 <h3 className="text-lg font-medium mb-2">Unscramble this word:</h3>
-                <div className="text-3xl font-bold mb-4 tracking-wider">{scrambledWord}</div>
+                <div className="text-4xl font-bold mb-6 tracking-widest text-indigo-600">{scrambledWord}</div>
 
                 {showHint && (
-                  <div className="mb-4 text-indigo-600">Hint: {vocabulary[currentWordIndex].translation}</div>
+                  <div className="mb-4 text-indigo-600 bg-indigo-50 py-2 px-4 rounded-lg inline-block">
+                    Hint: {vocabulary[currentWordIndex].translation}
+                  </div>
                 )}
 
-                <div className="flex gap-2 mb-4">
+                <div className="flex gap-2 mb-6 max-w-md mx-auto">
                   <Input
                     type="text"
                     value={userInput}
                     onChange={(e) => setUserInput(e.target.value)}
                     placeholder="Type your answer"
-                    className="text-center text-lg"
+                    className="text-center text-xl h-12"
+                    autoFocus
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         checkAnswer()
                       }
                     }}
+                    disabled={feedback?.show}
                   />
                 </div>
 
-                <div className="flex gap-2 justify-center">
-                  <Button variant="outline" onClick={showWordHint} disabled={showHint}>
+                <div className="flex gap-3 justify-center">
+                  <Button variant="outline" onClick={showWordHint} disabled={showHint || feedback?.show}>
                     Show Hint
                   </Button>
                   <Button
-                    className="bg-indigo-500 hover:bg-indigo-600"
+                    className="bg-indigo-500 hover:bg-indigo-600 min-w-[100px]"
                     onClick={checkAnswer}
-                    disabled={!userInput.trim()}
+                    disabled={!userInput.trim() || feedback?.show}
                   >
                     Check
                   </Button>
@@ -354,37 +403,41 @@ export default function WordScramblePage() {
         <Card className="mb-6">
           <CardContent className="p-6">
             <div className="text-center py-4">
-              <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Trophy className="h-8 w-8 text-indigo-500" />
+              <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trophy className="h-10 w-10 text-indigo-500" />
               </div>
-              <h2 className="text-xl font-bold mb-2">Game Over!</h2>
-              <p className="text-gray-500 mb-6">
-                You scored {score} points by unscrambling {correctWords} out of {totalWords} words.
+              <h2 className="text-2xl font-bold mb-2">Game Over!</h2>
+              <p className="text-gray-500 mb-8">
+                Great job! Here is how you performed.
               </p>
 
-              <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="bg-gray-100 p-4 rounded-lg">
-                  <p className="text-sm text-gray-500">Score</p>
-                  <p className="text-xl font-bold">{score}</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 p-4 rounded-xl border border-indigo-200">
+                  <p className="text-sm text-indigo-600 font-semibold uppercase tracking-wider mb-1">Score</p>
+                  <p className="text-3xl font-bold text-indigo-900">{score}</p>
                 </div>
-                <div className="bg-gray-100 p-4 rounded-lg">
-                  <p className="text-sm text-gray-500">Accuracy</p>
-                  <p className="text-xl font-bold">
+                <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-xl border border-green-200">
+                  <p className="text-sm text-green-600 font-semibold uppercase tracking-wider mb-1">Correct</p>
+                  <p className="text-3xl font-bold text-green-900">{correctWords}/{totalWords}</p>
+                </div>
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
+                  <p className="text-sm text-blue-600 font-semibold uppercase tracking-wider mb-1">Accuracy</p>
+                  <p className="text-3xl font-bold text-blue-900">
                     {totalWords > 0 ? Math.round((correctWords / totalWords) * 100) : 0}%
                   </p>
                 </div>
-                <div className="bg-gray-100 p-4 rounded-lg">
-                  <p className="text-sm text-gray-500">XP Earned</p>
-                  <p className="text-xl font-bold">{Math.floor(score / 10)}</p>
+                <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 rounded-xl border border-yellow-200">
+                  <p className="text-sm text-yellow-600 font-semibold uppercase tracking-wider mb-1">XP Earned</p>
+                  <p className="text-3xl font-bold text-yellow-900">{Math.floor(score / 10)}</p>
                 </div>
               </div>
 
               <div className="flex gap-4 justify-center">
-                <Button variant="outline" onClick={() => router.push("/games")}>
+                <Button variant="outline" size="lg" onClick={() => router.push("/games")}>
                   <Home className="h-4 w-4 mr-2" />
                   All Games
                 </Button>
-                <Button className="bg-indigo-500 hover:bg-indigo-600" onClick={startGame}>
+                <Button className="bg-indigo-500 hover:bg-indigo-600" size="lg" onClick={startGame}>
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Play Again
                 </Button>

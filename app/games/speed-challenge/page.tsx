@@ -45,7 +45,7 @@ const defaultVocabulary: VocabularyItem[] = [
 
 export default function SpeedChallengePage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const { toast } = useToast()
 
   const [vocabulary, setVocabulary] = useState<VocabularyItem[]>([])
@@ -181,8 +181,7 @@ export default function SpeedChallengePage() {
           totalAnswers: totalAnswers,
           accuracy: totalAnswers > 0 ? Math.round((correctAnswers / totalAnswers) * 100) : 0,
           timeLeft: timeLeft,
-        },
-      })
+        }}, token || undefined)
     }
   }
 

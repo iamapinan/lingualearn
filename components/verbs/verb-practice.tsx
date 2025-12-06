@@ -108,10 +108,11 @@ export function VerbPractice({ verbs, onComplete, mode }: VerbPracticeProps) {
     }
   }
 
-  const checkAnswer = async () => {
+  const checkAnswer = async (answerOverride?: string, isGiveUp = false) => {
     if (!currentQuestion) return
 
-    const correct = userAnswer.toLowerCase().trim() === currentQuestion.answer.toLowerCase()
+    const answerToCheck = answerOverride || userAnswer
+    const correct = !isGiveUp && answerToCheck.toLowerCase().trim() === currentQuestion.answer.toLowerCase()
 
     setScore((prev) => ({
       correct: prev.correct + (correct ? 1 : 0),
@@ -123,7 +124,9 @@ export function VerbPractice({ verbs, onComplete, mode }: VerbPracticeProps) {
       correct,
       message: correct
         ? "ถูกต้อง!"
-        : `ไม่ถูกต้อง คำตอบที่ถูกต้องคือ: ${currentQuestion.answer}`,
+        : isGiveUp 
+          ? `เฉลย: ${currentQuestion.answer}`
+          : `ไม่ถูกต้อง คำตอบที่ถูกต้องคือ: ${currentQuestion.answer}`,
     })
 
     try {
@@ -202,13 +205,29 @@ export function VerbPractice({ verbs, onComplete, mode }: VerbPracticeProps) {
               className="text-center text-lg"
               autoFocus
             />
-            <Button
-              onClick={checkAnswer}
-              className="w-full bg-indigo-500 hover:bg-indigo-600"
-              disabled={!userAnswer.trim()}
-            >
-              ตรวจคำตอบ
-            </Button>
+            <div className="flex gap-3">
+              <Button
+                onClick={() => checkAnswer()}
+                className="flex-1 bg-indigo-500 hover:bg-indigo-600"
+                disabled={!userAnswer.trim()}
+              >
+                ตรวจคำตอบ
+              </Button>
+              <Button
+                onClick={() => {
+                  setUserAnswer(currentQuestion.answer) // Fill answer so checkAnswer marks it wrong but shows feedback
+                  // We need to handle this carefully. 
+                  // If we just set state, checkAnswer won't see it immediately due to closure/async state.
+                  // Better to call a separate function or pass the answer to checkAnswer.
+                  // Let's modify checkAnswer to accept an optional answer override.
+                  checkAnswer(currentQuestion.answer, true) 
+                }}
+                variant="outline"
+                className="px-4"
+              >
+                ไม่ทราบ
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="space-y-4">

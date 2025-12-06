@@ -2946,13 +2946,40 @@ export async function saveGameResult(result: {
   score: number
   date: string
   details: any
-}): Promise<void> {
+}, token?: string): Promise<void> {
   try {
     // Use userId from parameter instead of localStorage
     const userId = result.userId
 
     // Ensure user exists in IndexedDB before saving
     await ensureUserExistsInIndexedDB(userId)
+
+    // If token is provided, sync with server
+    if (token) {
+      try {
+        const response = await fetch("/api/games/save", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(result),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          // Dispatch event to update UI with server data
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent("userUpdated", { detail: data }))
+          }
+        } else {
+          console.error("Failed to sync game result with server")
+        }
+      } catch (apiError) {
+        console.error("Error calling game save API:", apiError)
+        // Continue to save locally even if API fails
+      }
+    }
 
     const db = await initializeDatabase()
     return new Promise((resolve, reject) => {

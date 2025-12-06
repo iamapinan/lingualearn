@@ -62,7 +62,7 @@ const defaultVocabulary: VocabularyItem[] = [
 
 export default function MemoryMatchPage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const { toast } = useToast()
 
   const [vocabulary, setVocabulary] = useState<VocabularyItem[]>([])
@@ -343,8 +343,7 @@ export default function MemoryMatchPage() {
           totalPairs: vocabulary.length,
           moves: moves,
           timeLeft: timeLeft,
-        },
-      })
+        }}, token || undefined)
     }
   }
 

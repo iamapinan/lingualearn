@@ -9,13 +9,14 @@ import { saveGameResult } from "@/lib/database"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/components/auth-provider"
 import { BackButton } from "@/components/back-button"
+import { playCorrectSound, playIncorrectSound, playLevelCompleteSound } from "@/lib/audio-utils"
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")
 const MAX_ATTEMPTS = 6
 
 export default function HangmanGame() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const [word, setWord] = useState("")
   const [hint, setHint] = useState("")
   const [category, setCategory] = useState("")
@@ -75,6 +76,7 @@ export default function HangmanGame() {
     setGuessedLetters(newGuessedLetters)
 
     if (!word.includes(letter)) {
+      playIncorrectSound()
       const newWrongAttempts = wrongAttempts + 1
       setWrongAttempts(newWrongAttempts)
 
@@ -82,21 +84,22 @@ export default function HangmanGame() {
         endGame(false)
       }
     } else {
+      playCorrectSound()
       // Check if all letters are guessed
       const isWordGuessed = word.split("").every((char) => newGuessedLetters.includes(char) || char === " ")
 
       if (isWordGuessed) {
-        const newScore = calculateScore()
+        const newScore = calculateScore(0) // 0 extra wrong attempts since this turn
         setScore(newScore)
         endGame(true)
       }
     }
   }
 
-  const calculateScore = () => {
+  const calculateScore = (extraWrong = 0) => {
     const baseScore = word.length * 10
     const timeBonus = Math.floor(timeLeft / 10)
-    const wrongPenalty = wrongAttempts * 5
+    const wrongPenalty = (wrongAttempts + extraWrong) * 5
     return Math.max(0, baseScore + timeBonus - wrongPenalty)
   }
 
@@ -105,6 +108,7 @@ export default function HangmanGame() {
     setWon(isWin)
 
     if (isWin) {
+      playLevelCompleteSound()
       const finalScore = calculateScore()
       setScore(finalScore)
 
@@ -118,9 +122,10 @@ export default function HangmanGame() {
             word: word,
             wrongAttempts: wrongAttempts,
             timeLeft: timeLeft,
-          },
-        })
+          }}, token || undefined)
       }
+    } else {
+      playIncorrectSound()
     }
   }
 
@@ -140,10 +145,18 @@ export default function HangmanGame() {
       return (
         <div
           key={index}
-          className="mx-1 w-14 h-20 flex flex-col items-center justify-center border-b-4 border-indigo-600 rounded-lg bg-gradient-to-b from-indigo-50 to-indigo-100 shadow-md"
+          className={`mx-1 w-14 h-20 flex flex-col items-center justify-center border-b-4 rounded-lg shadow-md transition-all duration-300 ${
+            isRevealed && !isGuessed 
+              ? "border-red-400 bg-red-50" 
+              : "border-indigo-600 bg-gradient-to-b from-indigo-50 to-indigo-100"
+          }`}
         >
-          {isGuessed || isRevealed ? (
+          {isGuessed ? (
             <span className="text-4xl font-bold text-indigo-700 animate-bounce">
+              {letter}
+            </span>
+          ) : isRevealed ? (
+            <span className="text-4xl font-bold text-red-500">
               {letter}
             </span>
           ) : (
@@ -166,14 +179,21 @@ export default function HangmanGame() {
       <h1 className="text-3xl font-bold mb-6 text-center">Hangman</h1>
       <Card className="mb-6">
         <CardHeader className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
-          <CardTitle className="text-center text-2xl">Hangman Game</CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-2xl">Hangman Game</CardTitle>
+            {!gameOver && (
+               <div className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm">
+                 Potential Score: {calculateScore()}
+               </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="p-6">
           <div className="flex flex-col items-center mb-6">
             {/* Hangman Visual */}
             <div className="relative mb-6 flex items-center justify-center">
               <div className="text-center">
-                <div className="text-6xl font-bold mb-2">
+                <div className="text-6xl font-bold mb-2 transition-all duration-300 transform hover:scale-110 cursor-default">
                   {wrongAttempts === 0 && "😊"}
                   {wrongAttempts === 1 && "😐"}
                   {wrongAttempts === 2 && "😟"}
@@ -182,7 +202,9 @@ export default function HangmanGame() {
                   {wrongAttempts === 5 && "😱"}
                   {wrongAttempts >= 6 && "💀"}
                 </div>
-                <div className="text-sm font-semibold text-red-600">
+                <div className={`text-sm font-bold transition-colors duration-300 ${
+                  wrongAttempts >= MAX_ATTEMPTS - 1 ? "text-red-600 animate-pulse" : "text-indigo-600"
+                }`}>
                   {wrongAttempts}/{MAX_ATTEMPTS} Wrong Guesses
                 </div>
               </div>
@@ -194,10 +216,10 @@ export default function HangmanGame() {
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-xs font-semibold text-indigo-600 uppercase tracking-wider">Category</span>
                 </div>
-                <p className="text-md">{category}</p>
+                <p className="text-md font-medium text-gray-700">{category}</p>
               </div>
 
-              <div className="bg-gradient-to-r from-yellow-100 to-amber-100 rounded-lg p-4 mb-4 border border-yellow-200">
+              <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-xl p-4 mb-4 border border-yellow-200 shadow-sm">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">Hint / คำใบ้</span>
                 </div>
@@ -207,9 +229,9 @@ export default function HangmanGame() {
 
             {/* Word Display */}
             <div className="w-full max-w-2xl mb-6">
-              <div className="bg-white rounded-xl p-6 border-2 border-indigo-200 shadow-lg">
-                <div className="text-center mb-2">
-                  <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Guess the Word</span>
+              <div className="bg-white rounded-xl p-8 border-2 border-indigo-100 shadow-lg">
+                <div className="text-center mb-4">
+                  <span className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Guess the Word</span>
                 </div>
                 <div className="flex flex-wrap justify-center gap-2">{displayWord()}</div>
               </div>
@@ -220,7 +242,9 @@ export default function HangmanGame() {
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-gray-600">Time Left</span>
-                  <span className="text-lg font-bold text-indigo-600">{formatTime(timeLeft)}</span>
+                  <span className={`text-lg font-bold ${timeLeft < 30 ? "text-red-600 animate-pulse" : "text-indigo-600"}`}>
+                    {formatTime(timeLeft)}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-gray-600">Attempts</span>
@@ -231,41 +255,65 @@ export default function HangmanGame() {
               </div>
               <Progress
                 value={(timeLeft / 120) * 100}
-                className="w-full h-3"
+                className={`w-full h-3 ${timeLeft < 30 ? "bg-red-100" : "bg-indigo-100"}`}
+                // indicatorClassName={timeLeft < 30 ? "bg-red-500" : "bg-indigo-500"} // Note: Progress component might not support this prop directly depending on implementation, relying on default styles or global css
               />
             </div>
 
             {gameOver ? (
-              <div className="text-center mb-6 w-full max-w-2xl">
-                <div className={`rounded-xl p-6 mb-4 ${won ? "bg-gradient-to-r from-green-100 to-emerald-100 border-2 border-green-300" : "bg-gradient-to-r from-red-100 to-pink-100 border-2 border-red-300"}`}>
+              <div className="text-center mb-6 w-full max-w-2xl animate-in fade-in zoom-in duration-300">
+                <div className={`rounded-xl p-8 mb-6 shadow-lg ${won ? "bg-gradient-to-br from-green-50 to-emerald-100 border border-green-200" : "bg-gradient-to-br from-red-50 to-pink-100 border border-red-200"}`}>
+                  <div className="text-6xl mb-4">{won ? "🎉" : "💀"}</div>
                   <h3 className={`text-3xl font-bold ${won ? "text-green-700" : "text-red-700"} mb-3`}>
-                    {won ? "🎉 Congratulations! 🎉" : "💀 Game Over! 💀"}
+                    {won ? "Congratulations!" : "Game Over"}
                   </h3>
-                  <p className="text-lg font-semibold text-gray-700 mb-2">
-                    {won ? "คุณทายคำถูกต้อง!" : "คำที่ถูกต้องคือ"}
+                  <p className="text-lg font-medium text-gray-700 mb-4">
+                    {won ? "You guessed the word correctly!" : "The correct word was:"}
                   </p>
-                  <p className="text-2xl font-bold text-indigo-800 mb-4">{word}</p>
+                  <p className="text-4xl font-black text-indigo-900 mb-6 tracking-wider">{word}</p>
+                  
                   {won && (
-                    <div className="bg-white rounded-lg p-4 inline-block">
-                      <p className="text-sm text-gray-600 mb-1">Score</p>
-                      <p className="text-3xl font-bold text-indigo-600">{score}</p>
+                    <div className="grid grid-cols-3 gap-4 max-w-md mx-auto mb-2">
+                      <div className="bg-white/60 rounded-lg p-3 backdrop-blur-sm">
+                        <p className="text-xs text-gray-500 uppercase font-bold">Base Score</p>
+                        <p className="text-xl font-bold text-indigo-600">{word.length * 10}</p>
+                      </div>
+                      <div className="bg-white/60 rounded-lg p-3 backdrop-blur-sm">
+                        <p className="text-xs text-gray-500 uppercase font-bold">Time Bonus</p>
+                        <p className="text-xl font-bold text-green-600">+{Math.floor(timeLeft / 10)}</p>
+                      </div>
+                      <div className="bg-white/60 rounded-lg p-3 backdrop-blur-sm">
+                        <p className="text-xs text-gray-500 uppercase font-bold">Penalties</p>
+                        <p className="text-xl font-bold text-red-600">-{wrongAttempts * 5}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {won && (
+                    <div className="mt-4 bg-white rounded-xl p-4 inline-block shadow-sm border border-green-100">
+                      <p className="text-sm text-gray-500 font-bold uppercase tracking-wider mb-1">Total Score</p>
+                      <p className="text-4xl font-black text-green-600">{score}</p>
                     </div>
                   )}
                 </div>
-                <Button onClick={startNewGame} size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-lg px-8">
-                  เล่นอีกครั้ง
-                </Button>
+                <div className="flex gap-4 justify-center">
+                  <Button variant="outline" size="lg" onClick={() => router.push("/games")}>
+                    Back to Games
+                  </Button>
+                  <Button onClick={startNewGame} size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-lg px-8 shadow-lg hover:shadow-xl transition-all">
+                    Play Again
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="w-full max-w-2xl">
                 <div className="text-center mb-4">
-                  <span className="text-sm font-semibold text-gray-600 uppercase tracking-wider">เลือกตัวอักษร</span>
+                  <span className="text-sm font-semibold text-gray-600 uppercase tracking-wider">Select a Letter</span>
                 </div>
-                <div className="grid grid-cols-7 gap-3 bg-gradient-to-br from-gray-50 to-indigo-50 rounded-xl p-4 border border-indigo-100">
+                <div className="grid grid-cols-7 gap-3 bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
                   {ALPHABET.map((letter) => {
                     const isGuessed = guessedLetters.includes(letter)
                     const isCorrect = word.includes(letter)
-                    const isWrong = isGuessed && !isCorrect
 
                     return (
                       <Button
@@ -279,8 +327,8 @@ export default function HangmanGame() {
                             ? isCorrect
                               ? "bg-green-500 hover:bg-green-600 text-white border-2 border-green-600"
                               : "bg-red-500 hover:bg-red-600 text-white border-2 border-red-600 opacity-60 cursor-not-allowed"
-                            : "bg-indigo-600 hover:bg-indigo-700 text-white border-2 border-indigo-700 hover:scale-105 transition-transform"
-                        } h-12 w-12 p-0 text-lg font-bold shadow-md`}
+                            : "bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 hover:border-indigo-300 hover:scale-105 transition-all duration-200"
+                        } h-12 w-full p-0 text-lg font-bold shadow-sm`}
                       >
                         {letter}
                       </Button>
@@ -289,12 +337,6 @@ export default function HangmanGame() {
                 </div>
               </div>
             )}
-          </div>
-
-          <div className="text-center mt-6">
-            <Button onClick={() => router.push("/games")} variant="outline">
-              Back to Games
-            </Button>
           </div>
         </CardContent>
       </Card>

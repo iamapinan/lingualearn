@@ -21,7 +21,7 @@ const DIRECTIONS = [
 
 export default function WordSearchGame() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const [grid, setGrid] = useState<string[][]>([])
   const [words, setWords] = useState<string[]>([])
   const [translations, setTranslations] = useState<Record<string, string>>({})
@@ -63,7 +63,7 @@ export default function WordSearchGame() {
     return () => clearInterval(timer)
   }, [gameOver])
 
-  const generateGrid = useCallback((wordList: string[], size: number) => {
+  const generateGrid = useCallback((wordList: any[], size: number) => {
     // Create empty grid
     const newGrid: string[][] = Array(size)
       .fill(null)
@@ -253,8 +253,7 @@ export default function WordSearchGame() {
           totalWords: words.length,
           timeLeft: timeLeft,
           difficulty: difficulty,
-        },
-      })
+        }}, token || undefined)
     }
   }
 
